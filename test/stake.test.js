@@ -11,9 +11,9 @@ const { waitTx } = require('./helpers/utils');
 let contracts;
 let account;
 
-describe('App helper functions', function () {
+describe('Stake', function () {
 
-  beforeEach('setup', async function () {
+  beforeEach('Setup', async function () {
     const accounts = await ethers.getSigners();
     [account] = accounts;
 
