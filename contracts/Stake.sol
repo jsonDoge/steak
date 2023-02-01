@@ -13,7 +13,7 @@ contract Stake {
   }
 
   function stake (uint256 amount) public {
+    require(amount > 0, "CANT_STAKE_ZERO_AMOUNT");
     require(IERC20(stakeToken).allowance(msg.sender, address(this)) >= amount, "NOT_ENOUGH_ALLOWANCE");
-
   }
 }

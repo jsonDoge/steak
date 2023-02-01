@@ -20,12 +20,19 @@ describe('App helper functions', function () {
     contracts = await setupContracts(account.address);
   });
 
-  describe('Staking', async function () {
+  describe('Staking should fail', async function () {
     it('Try to stake without setting allowance', async function () {
       const stakeAmount = 1;
       await expect(
         waitTx(contracts.stake.connect(account).stake(stakeAmount))
       ).to.be.rejectedWith('NOT_ENOUGH_ALLOWANCE');
+    });
+
+    it('Try to stake 0 amount', async function () {
+      const stakeAmount = 0;
+      await expect(
+        waitTx(contracts.stake.connect(account).stake(stakeAmount))
+      ).to.be.rejectedWith('CANT_STAKE_ZERO_AMOUNT');
     });
   });
 });
