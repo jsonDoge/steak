@@ -1,6 +1,5 @@
 require('@nomiclabs/hardhat-ethers');
 require('hardhat-contract-sizer');
-require('@openzeppelin/hardhat-upgrades');
 
 module.exports = {
   defaultNetwork: 'hardhat',
