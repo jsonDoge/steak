@@ -2,6 +2,18 @@
 
 pragma solidity ^0.8;
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 contract Stake {
-  constructor () {}
+
+  address stakeToken;
+
+  constructor (address _stakeToken) {
+    stakeToken = _stakeToken;
+  }
+
+  function stake (uint256 amount) public {
+    require(IERC20(stakeToken).allowance(msg.sender, address(this)) >= amount, "NOT_ENOUGH_ALLOWANCE");
+
+  }
 }

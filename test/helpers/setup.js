@@ -1,15 +1,15 @@
 const setupContracts = async (ownerAddress) => {
-  const StakeFactory = await ethers.getContractFactory('Stake');
-  const stakeContract = await StakeFactory.deploy();
-  await stakeContract.deployTransaction.wait();
-
   const StakeTokenFactory = await ethers.getContractFactory('ERC20PresetFixedSupply');
-  const stakeTokenContract = await StakeTokenFactory.deploy('StakeToken', 'ST', 100, ownerAddress);
-  await stakeTokenContract.deployTransaction.wait();
+  const stakeToken = await StakeTokenFactory.deploy('StakeToken', 'ST', 100, ownerAddress);
+  await stakeToken.deployTransaction.wait();
+
+  const StakeFactory = await ethers.getContractFactory('Stake');
+  const stake = await StakeFactory.deploy(stakeToken.address);
+  await stake.deployTransaction.wait();
 
   return {
-    stakeContract,
-    stakeTokenContract,
+    stake,
+    stakeToken,
   };
 };
 
