@@ -11,6 +11,7 @@
     "@openzeppelin/contracts": "^4.8.1"
   },
   "devDependencies": {
+    "@nomicfoundation/hardhat-chai-matchers": "^1.0.5",
     "@nomiclabs/hardhat-ethers": "^2.2.2",
     "chai": "^4.3.7",
     "chai-as-promised": "^7.1.1",

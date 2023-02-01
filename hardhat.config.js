@@ -1,5 +1,6 @@
 require('@nomiclabs/hardhat-ethers');
 require('hardhat-contract-sizer');
+require('@nomicfoundation/hardhat-chai-matchers');
 
 module.exports = {
   defaultNetwork: 'hardhat',

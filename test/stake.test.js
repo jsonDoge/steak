@@ -35,4 +35,19 @@ describe('Stake', function () {
       ).to.be.rejectedWith('CANT_STAKE_ZERO_AMOUNT');
     });
   });
+
+  describe('Staking should pass', async function () {
+    it('Try to stake after setting allowance', async function () {
+      const stakeAmount = 1;
+
+      await waitTx(
+        contracts.stakeToken.connect(account).approve(contracts.stake.address, stakeAmount)
+      );
+      await waitTx(contracts.stake.connect(account).stake(stakeAmount));
+
+      await expect(
+        contracts.stake.getTotalStaked(account.address)
+      ).to.eventually.equal(stakeAmount);
+    });
+  });
 });
