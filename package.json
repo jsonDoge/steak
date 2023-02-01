@@ -1,0 +1,20 @@
+{
+  "name": "steak",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "jsonDoge",
+  "license": "MIT",
+  "scripts": {
+    "test": "hardhat test ./test/*.test.js --network hardhat"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.8.1"
+  },
+  "devDependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.2.2",
+    "chai": "^4.3.7",
+    "ethers": "^5.7.2",
+    "hardhat": "^2.12.6",
+    "hardhat-contract-sizer": "^2.7.0"
+  }
+}
