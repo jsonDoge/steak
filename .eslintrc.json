@@ -1,0 +1,48 @@
+{
+  "env": {
+    "es2020": true,
+    "mocha": true,
+    "node": true
+  },
+  "globals": {
+    "artifacts": true,
+    "ethers": true,
+    "web3": true,
+    "assert": true
+  },
+  "extends": [
+    "eslint:recommended"
+  ],
+  "parserOptions": {
+    "ecmaVersion": 12,
+    "sourceType": "module"
+  },
+  "plugins": [],
+  "rules": {
+    "no-console": "off",
+    "implicit-arrow-linebreak": "off",
+    "linebreak-style": [
+      "error",
+      "unix"
+    ],
+    "quotes": [
+      "error",
+      "single"
+    ],
+    "max-len": [
+      "error",
+      {
+        "code": 100
+      }
+    ],
+    "semi": [
+      "error",
+      "always"
+    ],
+    "eol-last": [
+      "error",
+      "always"
+    ],
+    "no-trailing-spaces": "error"
+  }
+}
