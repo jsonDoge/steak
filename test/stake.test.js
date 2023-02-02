@@ -73,4 +73,24 @@ describe('Stake', function () {
       ).to.eventually.equal(newApy);
     });
   });
+
+  describe('Claiming rewards', async function () {
+    it('Calculates rewards using staked amount and apy', async function () {
+      const newApy = 100; // 1%
+      const stakeAmount = 200;
+
+      // stake
+      await waitTx(
+        contracts.stakeToken.connect(owner).approve(contracts.stake.address, stakeAmount)
+      );
+      await waitTx(contracts.stake.connect(owner).stake(stakeAmount));
+
+      // add apy
+      await waitTx(contracts.stake.connect(owner).setApy(owner.address, newApy));
+
+      await expect(
+        contracts.stake.getRewards(owner.address)
+      ).to.eventually.equal(2);
+    });
+  });
 });

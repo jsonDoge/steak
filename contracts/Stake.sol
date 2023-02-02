@@ -9,6 +9,7 @@ contract Stake {
     address private stakeToken;
 
     mapping(address => uint256) private stakedAmount;
+    // is stored as 0.01% units
     mapping(address => uint256) private apy;
 
     constructor(address admin_, address stakeToken_) {
@@ -45,5 +46,10 @@ contract Stake {
 
     function getApy(address addr) public view returns (uint256) {
         return apy[addr];
+    }
+
+    // TODO: add staking duration limits
+    function getRewards(address addr) public view returns (uint256) {
+        return (stakedAmount[addr] * apy[addr]) / 10000;
     }
 }
