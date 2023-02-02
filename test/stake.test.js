@@ -55,9 +55,22 @@ describe('Stake', function () {
   describe('Setting APY should fail', async function () {
     it('Trying to set APY as not admin', async function () {
       const newApy = 1;
+
       await expect(
         waitTx(contracts.stake.connect(accounts[1]).setApy(owner.address, newApy))
       ).to.be.rejectedWith('ONLY_ADMIN');
+    });
+  });
+
+  describe('Setting APY should pass', async function () {
+    it('Trying to set APY as admin', async function () {
+      const newApy = 1;
+
+      await waitTx(contracts.stake.connect(owner).setApy(accounts[1].address, newApy));
+
+      await expect(
+        contracts.stake.getApy(accounts[1].address)
+      ).to.eventually.equal(newApy);
     });
   });
 });

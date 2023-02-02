@@ -39,7 +39,11 @@ contract Stake {
         stakedAmount[msg.sender] += amount;
     }
 
-    function getTotalStaked(address addr) public view returns(uint256) {
-      return stakedAmount[addr];
+    function getTotalStaked(address addr) public view returns (uint256) {
+        return stakedAmount[addr];
+    }
+
+    function getApy(address addr) public view returns (uint256) {
+        return apy[addr];
     }
 }
