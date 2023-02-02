@@ -4,7 +4,7 @@ const setupContracts = async (ownerAddress) => {
   await stakeToken.deployTransaction.wait();
 
   const StakeFactory = await ethers.getContractFactory('Stake');
-  const stake = await StakeFactory.deploy(stakeToken.address);
+  const stake = await StakeFactory.deploy(ownerAddress, stakeToken.address);
   await stake.deployTransaction.wait();
 
   return {

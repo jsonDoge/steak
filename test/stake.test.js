@@ -9,29 +9,30 @@ const { setupContracts } = require('./helpers/setup');
 const { waitTx } = require('./helpers/utils');
 
 let contracts;
-let account;
+let accounts;
+let owner;
 
 describe('Stake', function () {
 
   beforeEach('Setup', async function () {
-    const accounts = await ethers.getSigners();
-    [account] = accounts;
+    accounts = await ethers.getSigners();
+    [owner] = accounts;
 
-    contracts = await setupContracts(account.address);
+    contracts = await setupContracts(owner.address);
   });
 
   describe('Staking should fail', async function () {
     it('Try to stake without setting allowance', async function () {
       const stakeAmount = 1;
       await expect(
-        waitTx(contracts.stake.connect(account).stake(stakeAmount))
+        waitTx(contracts.stake.connect(owner).stake(stakeAmount))
       ).to.be.rejectedWith('NOT_ENOUGH_ALLOWANCE');
     });
 
     it('Try to stake 0 amount', async function () {
       const stakeAmount = 0;
       await expect(
-        waitTx(contracts.stake.connect(account).stake(stakeAmount))
+        waitTx(contracts.stake.connect(owner).stake(stakeAmount))
       ).to.be.rejectedWith('CANT_STAKE_ZERO_AMOUNT');
     });
   });
@@ -41,13 +42,22 @@ describe('Stake', function () {
       const stakeAmount = 1;
 
       await waitTx(
-        contracts.stakeToken.connect(account).approve(contracts.stake.address, stakeAmount)
+        contracts.stakeToken.connect(owner).approve(contracts.stake.address, stakeAmount)
       );
-      await waitTx(contracts.stake.connect(account).stake(stakeAmount));
+      await waitTx(contracts.stake.connect(owner).stake(stakeAmount));
 
       await expect(
-        contracts.stake.getTotalStaked(account.address)
+        contracts.stake.getTotalStaked(owner.address)
       ).to.eventually.equal(stakeAmount);
+    });
+  });
+
+  describe('Setting APY should fail', async function () {
+    it('Trying to set APY as not admin', async function () {
+      const newApy = 1;
+      await expect(
+        waitTx(contracts.stake.connect(accounts[1]).setApy(owner.address, newApy))
+      ).to.be.rejectedWith('ONLY_ADMIN');
     });
   });
 });
