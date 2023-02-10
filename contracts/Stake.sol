@@ -3,8 +3,11 @@
 pragma solidity ^0.8;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@prb/math/src/UD60x18.sol" as PRB;
 
 contract Stake {
+    uint256 public constant BLOCKS_IN_DAY = 7200;
+
     address private admin;
     address private stakeToken;
 
@@ -48,8 +51,43 @@ contract Stake {
         return apy[addr];
     }
 
-    // TODO: add staking duration limits
-    function claimRewards(address addr) public view returns (uint256) {
-        return (stakedAmount[addr] * apy[addr]) / 10000;
+    // daily compound interest rate
+    // apy_ - apy * 10 ** 2 (multiplied by 10**2 for decimal points)
+    // formula - ((1 + apy / 100) ^ (1 / 365)) - 1
+
+    function getInterestRateFromApy(uint256 apy_) public pure returns (PRB.UD60x18) {
+        return
+            PRB.sub(
+                PRB.pow(
+                    PRB.add(PRB.convert(1), PRB.div(PRB.convert(apy_), PRB.convert(10 ** 4))),
+                    PRB.div(PRB.convert(1), PRB.convert(365))
+                ),
+                PRB.convert(1)
+            );
+    }
+
+    // TODO: add staking duration
+    // TODO: implement claiming (currently only returning reward amount)
+
+    // Claim reward amount
+    // rate - interest rate
+    // S - initial staked amount
+    // days - days from
+
+    // S * (1 + rate) ^ (days)
+    function claimRewards(address addr, uint256 days_) public view returns (uint256) {
+        return
+            PRB.convert(
+                PRB.sub(
+                    PRB.mul(
+                        PRB.convert(stakedAmount[addr]),
+                        PRB.pow(
+                            PRB.add(PRB.convert(1), getInterestRateFromApy(apy[addr])),
+                            PRB.convert(days_)
+                        )
+                    ),
+                    PRB.convert(stakedAmount[addr])
+                )
+            );
     }
 }

@@ -8,11 +8,13 @@
     "test": "hardhat test ./test/*.test.js --network hardhat"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^4.8.1"
+    "@openzeppelin/contracts": "^4.8.1",
+    "@prb/math": "^3.3.0"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.5",
     "@nomiclabs/hardhat-ethers": "^2.2.2",
+    "bignumber.js": "^9.1.1",
     "chai": "^4.3.7",
     "chai-as-promised": "^7.1.1",
     "eslint": "^8.33.0",
