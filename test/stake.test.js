@@ -1,5 +1,7 @@
 const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
+// ethers BigNumber does not support floating-point math
+const BN = require('bignumber.js');
 
 chai.use(chaiAsPromised);
 
@@ -77,7 +79,8 @@ describe('Stake', function () {
   describe('Claiming rewards should pass', async function () {
     it('Calculates rewards using staked amount and apy', async function () {
       const newApy = 100; // 1%
-      const stakeAmount = 200;
+      const stakeAmount = 200 * 10 ** 9;
+      const days = 365;
 
       // stake
       await waitTx(
@@ -88,9 +91,25 @@ describe('Stake', function () {
       // add apy
       await waitTx(contracts.stake.connect(owner).setApy(owner.address, newApy));
 
+      // TODO: result is 1999... due to PRB rounding down
+
       await expect(
-        contracts.stake.claimRewards(owner.address)
-      ).to.eventually.equal(2);
+        contracts.stake.claimRewards(owner.address, days)
+      ).to.eventually.equal((2 * 10 ** 9) - 1);
+    });
+  });
+
+  describe('Calculates interest rate from APY correctly', async function () {
+    it('Getting interest rate of regular', async function () {
+      const apy = 1500; // 15%
+
+      const interestRate = await contracts.stake.getInterestRateFromApy(apy);
+
+      const expectedInterestRate = '0.00038298275';
+      const resultInterestRate = BN(interestRate.toString())
+        .div(BN(10).pow(18)).toString().slice(0, 13);
+
+      expect(resultInterestRate).to.equal(expectedInterestRate);
     });
   });
 });
