@@ -49,7 +49,7 @@ contract Stake {
     }
 
     // TODO: add staking duration limits
-    function getRewards(address addr) public view returns (uint256) {
+    function claimRewards(address addr) public view returns (uint256) {
         return (stakedAmount[addr] * apy[addr]) / 10000;
     }
 }
