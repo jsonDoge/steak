@@ -74,7 +74,7 @@ describe('Stake', function () {
     });
   });
 
-  describe('Claiming rewards', async function () {
+  describe('Claiming rewards should pass', async function () {
     it('Calculates rewards using staked amount and apy', async function () {
       const newApy = 100; // 1%
       const stakeAmount = 200;
@@ -89,7 +89,7 @@ describe('Stake', function () {
       await waitTx(contracts.stake.connect(owner).setApy(owner.address, newApy));
 
       await expect(
-        contracts.stake.getRewards(owner.address)
+        contracts.stake.claimRewards(owner.address)
       ).to.eventually.equal(2);
     });
   });
