@@ -13,6 +13,8 @@ contract Stake {
         uint256 stakedAmount;
         uint256 claimableAmount;
         uint256 lockedUntil;
+        uint256 durationDays;
+        uint8 currentCycle;
     }
 
     mapping(address => Staker) private stakers;
@@ -34,14 +36,26 @@ contract Stake {
 
     function setApy(address staker, uint256 newApy) public onlyAdmin {
         require(stakers[staker].stakedAmount > 0, "STAKER_NOT_FOUND");
+        require(
+            _now() - getStakeStartdate(stakers[staker].lockedUntil, stakers[staker].durationDays) >=
+                stakers[staker].currentCycle * 28 days,
+            "CYCLE_HAS_NOT_ENDED"
+        );
 
         apy[staker] = newApy;
 
-        uint256 daysLeft = (stakers[staker].lockedUntil - _now()) / 86400;
-        uint256 cycleDays = daysLeft > 28 ? 28 : daysLeft;
+        uint256 cycleDays = 28;
+        if (stakers[staker].lockedUntil < _now()) {
+            cycleDays =
+                getStakeStartdate(stakers[staker].lockedUntil, stakers[staker].durationDays) -
+                stakers[staker].currentCycle *
+                28 days;
+        }
+
+        stakers[staker].currentCycle += 1;
 
         stakers[staker].claimableAmount += getRewards(
-            stakers[staker].stakedAmount,
+            stakers[staker].stakedAmount + stakers[staker].claimableAmount,
             newApy,
             cycleDays
         );
@@ -59,8 +73,7 @@ contract Stake {
 
         IERC20(stakeToken).transferFrom(msg.sender, address(this), amount);
 
-        stakers[msg.sender].stakedAmount = amount;
-        stakers[msg.sender].lockedUntil = _now() + (days_ * 1 days);
+        stakers[msg.sender] = Staker(amount, 0, _now() + (days_ * 1 days), days_, 1);
     }
 
     function getTotalStaked(address staker) public view returns (uint256) {
@@ -78,8 +91,21 @@ contract Stake {
         stakers[msg.sender].claimableAmount = 0;
     }
 
-        IERC20(stakeToken).transfer(msg.sender, claimableAmount[msg.sender]);
-        claimableAmount[msg.sender] = 0;
+    function claimAll() public {
+        require(stakers[msg.sender].lockedUntil > _now(), "STAKED_AMOUNT_IS_ZERO");
+        require(stakers[msg.sender].stakedAmount > 0, "STAKED_AMOUNT_IS_ZERO");
+
+        IERC20(stakeToken).transfer(
+            msg.sender,
+            stakers[msg.sender].claimableAmount + stakers[msg.sender].stakedAmount
+        );
+
+        stakers[msg.sender].claimableAmount = 0;
+        stakers[msg.sender].stakedAmount = 0;
+
+        // Optional: Not necessary to reset before second staking
+        stakers[msg.sender].lockedUntil = 0;
+        apy[msg.sender] = 0;
     }
 
     // math
@@ -128,5 +154,12 @@ contract Stake {
 
     function _now() private view returns (uint256) {
         return block.timestamp;
+    }
+
+    function getStakeStartdate(
+        uint256 lockedUntil,
+        uint256 durationDays
+    ) public pure returns (uint256) {
+        return (lockedUntil - durationDays * 1 days);
     }
 }
