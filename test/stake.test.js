@@ -128,10 +128,25 @@ describe('Stake', function () {
       const stakeAmount = 1;
       const days = 365;
 
-      // stake
       await addStaker(contracts, owner, stakeAmount, days);
 
       await network.provider.send('evm_increaseTime', [DAYS_28 - 1]);
+
+      await expect(
+        waitTx(contracts.stake.connect(owner).setApy(owner.address, newApy))
+      ).to.be.rejectedWith('CYCLE_HAS_NOT_ENDED');
+    });
+
+    it('Trying to set APY multiple times after 28 days passed', async function () {
+      const newApy = 1;
+      const stakeAmount = 1;
+      const days = 365;
+
+      await addStaker(contracts, owner, stakeAmount, days);
+
+      await network.provider.send('evm_increaseTime', [DAYS_28]);
+
+      await waitTx(contracts.stake.connect(owner).setApy(owner.address, newApy));
 
       await expect(
         waitTx(contracts.stake.connect(owner).setApy(owner.address, newApy))
@@ -155,6 +170,22 @@ describe('Stake', function () {
         contracts.stake.getApy(accounts[1].address)
       ).to.eventually.equal(newApy);
     });
+
+    it('Trying to set APY for the last cycle', async function () {
+      const newApy = 1;
+      const stakeAmount = 1;
+      const days = 21;
+
+      await addStaker(contracts, accounts[1], stakeAmount, days);
+
+      await network.provider.send('evm_increaseTime', [DAYS_28]);
+
+      await waitTx(contracts.stake.connect(owner).setApy(accounts[1].address, newApy));
+
+      await expect(
+        contracts.stake.getApy(accounts[1].address)
+      ).to.eventually.equal(newApy);
+    });
   });
 
   describe('Claiming rewards should pass', async function () {
@@ -163,18 +194,37 @@ describe('Stake', function () {
       const stakeAmount = 200 * 10 ** 9;
       const days = 365;
 
-      // stake
       await addStaker(contracts, owner, stakeAmount, days);
 
       await network.provider.send('evm_increaseTime', [DAYS_28]);
 
-      // add apy
       await waitTx(contracts.stake.connect(owner).setApy(owner.address, newApy));
 
       const balanceBefore = await contracts.stakeToken.balanceOf(owner.address);
       await waitTx(contracts.stake.connect(owner).claimRewards());
 
       const expectedReward = '152720889';
+
+      await expect(
+        contracts.stakeToken.balanceOf(owner.address)
+      ).to.eventually.equal(balanceBefore.add(expectedReward));
+    });
+
+    it('Claiming last cycle rewards', async function () {
+      const newApy = 100; // 1%
+      const stakeAmount = 200 * 10 ** 9;
+      const days = 21;
+
+      await addStaker(contracts, owner, stakeAmount, days);
+
+      await network.provider.send('evm_increaseTime', [DAYS_28]);
+
+      await waitTx(contracts.stake.connect(owner).setApy(owner.address, newApy));
+
+      const balanceBefore = await contracts.stakeToken.balanceOf(owner.address);
+      await waitTx(contracts.stake.connect(owner).claimRewards());
+
+      const expectedReward = '114529738';
 
       await expect(
         contracts.stakeToken.balanceOf(owner.address)
