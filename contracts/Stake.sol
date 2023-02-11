@@ -33,7 +33,7 @@ contract Stake {
 
         apy[staker] = newApy;
 
-        uint256 daysLeft = (lockedUntil[staker] - now()) / 86400;
+        uint256 daysLeft = (lockedUntil[staker] - _now()) / 86400;
         uint256 cycleDays = daysLeft > 28 ? 28 : daysLeft;
 
         claimableAmount[staker] += getRewards(stakedAmount[staker], newApy, cycleDays);
@@ -52,7 +52,7 @@ contract Stake {
         IERC20(stakeToken).transferFrom(msg.sender, address(this), amount);
 
         stakedAmount[msg.sender] = amount;
-        lockedUntil[msg.sender] = now() + (days_ * 1 days);
+        lockedUntil[msg.sender] = _now() + (days_ * 1 days);
     }
 
     function getTotalStaked(address addr) public view returns (uint256) {
@@ -114,7 +114,7 @@ contract Stake {
 
     // helpers
 
-    function now() private view returns (uint256) {
+    function _now() private view returns (uint256) {
         return block.timestamp;
     }
 }
