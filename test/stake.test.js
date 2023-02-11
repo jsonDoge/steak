@@ -130,7 +130,7 @@ describe('Stake', function () {
 
       await addStaker(contracts, owner, stakeAmount, days);
 
-      await network.provider.send('evm_increaseTime', [DAYS_28 - 1]);
+      await network.provider.send('evm_increaseTime', [DAYS_28 - DAYS_1]);
 
       await expect(
         waitTx(contracts.stake.connect(owner).setApy(owner.address, newApy))
@@ -188,8 +188,28 @@ describe('Stake', function () {
     });
   });
 
+  describe('Claiming rewards should fail', async function () {
+    it('Claiming rewards twice', async function () {
+      const newApy = 100;
+      const stakeAmount = 10000;
+      const days = 365;
+
+      await addStaker(contracts, owner, stakeAmount, days);
+
+      await network.provider.send('evm_increaseTime', [DAYS_28]);
+
+      await waitTx(contracts.stake.connect(owner).setApy(owner.address, newApy));
+
+      await waitTx(contracts.stake.connect(owner).claimRewards());
+
+      await expect(
+        waitTx(contracts.stake.connect(owner).claimRewards())
+      ).to.be.rejectedWith('CLAIMABLE_AMOUNT_IS_ZERO');
+    });
+  });
+
   describe('Claiming rewards should pass', async function () {
-    it('Claiming after 28 days passed', async function () {
+    it('Claiming full cycle rewards (28 days)', async function () {
       const newApy = 100; // 1%
       const stakeAmount = 200 * 10 ** 9;
       const days = 365;
@@ -210,7 +230,7 @@ describe('Stake', function () {
       ).to.eventually.equal(balanceBefore.add(expectedReward));
     });
 
-    it('Claiming last cycle rewards', async function () {
+    it('Claiming partial cycle rewards (21 days)', async function () {
       const newApy = 100; // 1%
       const stakeAmount = 200 * 10 ** 9;
       const days = 21;
@@ -224,7 +244,7 @@ describe('Stake', function () {
       const balanceBefore = await contracts.stakeToken.balanceOf(owner.address);
       await waitTx(contracts.stake.connect(owner).claimRewards());
 
-      const expectedReward = '114529738';
+      const expectedReward = '114529737';
 
       await expect(
         contracts.stakeToken.balanceOf(owner.address)
