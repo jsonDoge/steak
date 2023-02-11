@@ -10,6 +10,7 @@ contract Stake {
     address private stakeToken;
 
     mapping(address => uint256) private stakedAmount;
+    mapping(address => uint256) private claimableAmount;
     mapping(address => uint256) private lockedUntil;
 
     // is stored as 0.01% units
@@ -28,7 +29,14 @@ contract Stake {
     // admin
 
     function setApy(address staker, uint256 newApy) public onlyAdmin {
+        require(lockedUntil[staker] > 0, "STAKER_NOT_FOUND");
+
         apy[staker] = newApy;
+
+        uint256 daysLeft = (lockedUntil[staker] - now()) / 86400;
+        uint256 cycleDays = daysLeft > 28 ? 28 : daysLeft;
+
+        claimableAmount[staker] += getRewards(stakedAmount[staker], newApy, cycleDays);
     }
 
     // stakers
@@ -41,8 +49,10 @@ contract Stake {
             "NOT_ENOUGH_ALLOWANCE"
         );
 
+        IERC20(stakeToken).transferFrom(msg.sender, address(this), amount);
+
         stakedAmount[msg.sender] = amount;
-        lockedUntil[msg.sender] = block.timestamp + days_ * 1 days;
+        lockedUntil[msg.sender] = now() + (days_ * 1 days);
     }
 
     function getTotalStaked(address addr) public view returns (uint256) {
@@ -52,6 +62,15 @@ contract Stake {
     function getApy(address addr) public view returns (uint256) {
         return apy[addr];
     }
+
+    function claimRewards() public {
+        require(claimableAmount[msg.sender] > 0, "CLAIMABLE_AMOUNT_IS_ZERO");
+
+        IERC20(stakeToken).transfer(msg.sender, claimableAmount[msg.sender]);
+        claimableAmount[msg.sender] = 0;
+    }
+
+    // math
 
     // Daily compound interest rate
     // apy_: apy * 10 ** 2 (multiplied by 10**2 for decimal points)
@@ -71,25 +90,31 @@ contract Stake {
     // TODO: add staking duration
     // TODO: implement claiming (currently only returning reward amount)
 
-    // Claim reward amount
+    // Get rewards amount
     // rate: interest rate
-    // S: initial staked amount
+    // s: initial staked amount
     // days: staking duration in days
 
-    // formula: S - S * ((1 + rate) ^ days)
-    function claimRewards(address addr, uint256 days_) public view returns (uint256) {
+    // formula: s * ((1 + rate) ^ days) - s
+    function getRewards(uint256 s, uint256 apy_, uint256 days_) public pure returns (uint256) {
         return
             PRB.convert(
                 PRB.sub(
                     PRB.mul(
-                        PRB.convert(stakedAmount[addr]),
+                        PRB.convert(s),
                         PRB.pow(
-                            PRB.add(PRB.convert(1), getInterestRateFromApy(apy[addr])),
+                            PRB.add(PRB.convert(1), getInterestRateFromApy(apy_)),
                             PRB.convert(days_)
                         )
                     ),
-                    PRB.convert(stakedAmount[addr])
+                    PRB.convert(s)
                 )
             );
+    }
+
+    // helpers
+
+    function now() private view returns (uint256) {
+        return block.timestamp;
     }
 }

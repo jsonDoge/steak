@@ -2,13 +2,16 @@ const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
 // ethers BigNumber does not support floating-point math
 const BN = require('bignumber.js');
+const { network } = require('hardhat');
 
 chai.use(chaiAsPromised);
 
 const { expect } = chai;
 
 const { setupContracts } = require('./helpers/setup');
-const { waitTx } = require('./helpers/utils');
+const { waitTx, addStaker } = require('./helpers/utils');
+
+const DAYS_28 = 60 * 60 * 24 * 28;
 
 let contracts;
 let accounts;
@@ -21,6 +24,17 @@ describe('Stake', function () {
     [owner] = accounts;
 
     contracts = await setupContracts(owner.address);
+
+    // fund staking contract
+    await contracts.stakeToken.connect(owner).transfer(
+      contracts.stake.address,
+      BN(100).times(BN(10).pow(18)).toFixed()
+    );
+
+    await contracts.stakeToken.connect(owner).transfer(
+      accounts[1].address,
+      BN(100).times(BN(10).pow(18)).toFixed()
+    );
   });
 
   describe('Staking should fail', async function () {
@@ -112,6 +126,10 @@ describe('Stake', function () {
   describe('Setting APY should pass', async function () {
     it('Trying to set APY as admin', async function () {
       const newApy = 1;
+      const stakeAmount = 1;
+      const days = 365;
+
+      await addStaker(contracts, accounts[1], stakeAmount, days);
 
       await waitTx(contracts.stake.connect(owner).setApy(accounts[1].address, newApy));
 
@@ -122,25 +140,27 @@ describe('Stake', function () {
   });
 
   describe('Claiming rewards should pass', async function () {
-    it('Calculates rewards using staked amount and apy', async function () {
+    it('Claiming after 28 days passed', async function () {
       const newApy = 100; // 1%
       const stakeAmount = 200 * 10 ** 9;
       const days = 365;
 
       // stake
-      await waitTx(
-        contracts.stakeToken.connect(owner).approve(contracts.stake.address, stakeAmount)
-      );
-      await waitTx(contracts.stake.connect(owner).stake(stakeAmount, days));
+      await addStaker(contracts, owner, stakeAmount, days);
+
+      await network.provider.send('evm_increaseTime', [DAYS_28]);
 
       // add apy
       await waitTx(contracts.stake.connect(owner).setApy(owner.address, newApy));
 
-      // TODO: result is 1999... due to PRB rounding down
+      const balanceBefore = await contracts.stakeToken.balanceOf(owner.address);
+      await waitTx(contracts.stake.connect(owner).claimRewards());
+
+      const expectedReward = '152720889';
 
       await expect(
-        contracts.stake.claimRewards(owner.address, days)
-      ).to.eventually.equal((2 * 10 ** 9) - 1);
+        contracts.stakeToken.balanceOf(owner.address)
+      ).to.eventually.equal(balanceBefore.add(expectedReward));
     });
   });
 
