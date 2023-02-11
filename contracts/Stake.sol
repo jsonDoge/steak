@@ -51,9 +51,9 @@ contract Stake {
         return apy[addr];
     }
 
-    // daily compound interest rate
-    // apy_ - apy * 10 ** 2 (multiplied by 10**2 for decimal points)
-    // formula - ((1 + apy / 100) ^ (1 / 365)) - 1
+    // Daily compound interest rate
+    // apy_: apy * 10 ** 2 (multiplied by 10**2 for decimal points)
+    // formula: ((1 + apy / 100) ^ (1 / 365)) - 1
 
     function getInterestRateFromApy(uint256 apy_) public pure returns (PRB.UD60x18) {
         return
@@ -70,11 +70,11 @@ contract Stake {
     // TODO: implement claiming (currently only returning reward amount)
 
     // Claim reward amount
-    // rate - interest rate
-    // S - initial staked amount
-    // days - days from
+    // rate: interest rate
+    // S: initial staked amount
+    // days: staking duration in days
 
-    // S * (1 + rate) ^ (days)
+    // formula: S - S * ((1 + rate) ^ days)
     function claimRewards(address addr, uint256 days_) public view returns (uint256) {
         return
             PRB.convert(
