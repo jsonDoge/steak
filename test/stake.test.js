@@ -9,7 +9,7 @@ chai.use(chaiAsPromised);
 const { expect } = chai;
 
 const { setupContracts } = require('./helpers/setup');
-const { waitTx, addStaker } = require('./helpers/utils');
+const { waitTx, addStaker, addToStake } = require('./helpers/utils');
 
 const DAYS_1 = 60 * 60 * 24 * 1;
 const DAYS_28 = DAYS_1 * 28;
@@ -219,6 +219,70 @@ describe('Stake', function () {
         contracts.stake.getApy(accounts[1].address)
       ).to.eventually.equal(newApy);
     });
+
+    it('Trying to set APY after addToStake called', async function () {
+      const newApy = 100;
+      const stakeAmount = 200 * 10 ** 9;
+      const addToStakeAmount = 100 * 10 ** 9;
+
+      const days = 365;
+
+      await addStaker(contracts, owner, stakeAmount, days);
+      await addToStake(contracts, owner, addToStakeAmount);
+
+      await network.provider.send('evm_increaseTime', [DAYS_28]);
+
+      await waitTx(contracts.stake.connect(owner).setApy(owner.address, newApy));
+
+      const expectedReward = '152720889';
+
+      await expect(
+        contracts.stake.getApy(owner.address)
+      ).to.eventually.equal(newApy);
+      await expect(
+        contracts.stake.getPendingAmount(owner.address)
+      ).to.eventually.equal(0);
+      await expect(
+        contracts.stake.getTotalStaked(owner.address)
+      ).to.eventually.equal(BN(stakeAmount).plus(addToStakeAmount).plus(expectedReward));
+    });
+
+    it('Trying to set APY second time after addToStake called', async function () {
+      const newApy = 100;
+      const stakeAmount = 200 * 10 ** 9;
+      const addToStakeAmount = 100 * 10 ** 9;
+
+      const days = 365;
+
+      await addStaker(contracts, owner, stakeAmount, days);
+      await addToStake(contracts, owner, addToStakeAmount);
+
+      await network.provider.send('evm_increaseTime', [DAYS_28]);
+
+      await waitTx(contracts.stake.connect(owner).setApy(owner.address, newApy));
+
+      await network.provider.send('evm_increaseTime', [DAYS_28]);
+
+      await waitTx(contracts.stake.connect(owner).setApy(owner.address, newApy));
+
+      const expectedRewardFirstCycle =  '152720889';
+      const expectedRewardSecondCycle = '229197953';
+
+      await expect(
+        contracts.stake.getApy(owner.address)
+      ).to.eventually.equal(newApy);
+      await expect(
+        contracts.stake.getPendingAmount(owner.address)
+      ).to.eventually.equal(0);
+      await expect(
+        contracts.stake.getTotalStaked(owner.address)
+      ).to.eventually.equal(
+        BN(stakeAmount)
+          .plus(addToStakeAmount)
+          .plus(expectedRewardFirstCycle)
+          .plus(expectedRewardSecondCycle)
+      );
+    });
   });
 
   describe('Claiming rewards should fail', async function () {
@@ -368,6 +432,59 @@ describe('Stake', function () {
       await expect(
         contracts.stakeToken.balanceOf(owner.address)
       ).to.eventually.equal(balanceBefore.add(expectedReward));
+    });
+  });
+
+  describe('Adding to stake should fail', async function () {
+    it('Trying to add to stake while not staking', async function () {
+      const stakeAmount = 1;
+
+      await expect(
+        waitTx(contracts.stake.connect(owner).addToStake(stakeAmount))
+      ).to.be.rejectedWith('STAKED_AMOUNT_IS_ZERO');
+    });
+
+    it('Trying to add to stake in final cycle', async function () {
+      const newApy = 100; // 1%
+      const stakeAmount = 200 * 10 ** 9;
+      const days = 29;
+
+      await addStaker(contracts, owner, stakeAmount, days);
+
+      await network.provider.send('evm_increaseTime', [DAYS_28]);
+
+      await waitTx(contracts.stake.connect(owner).setApy(owner.address, newApy));
+
+      await expect(
+        waitTx(contracts.stake.connect(owner).addToStake(stakeAmount))
+      ).to.be.rejectedWith('FINAL_CYCLE');
+    });
+
+    it('Trying to add to stake without allowance', async function () {
+      const stakeAmount = 200 * 10 ** 9;
+      const days = 365;
+
+      await addStaker(contracts, owner, stakeAmount, days);
+
+      await expect(
+        waitTx(contracts.stake.connect(owner).addToStake(stakeAmount))
+      ).to.be.rejectedWith('NOT_ENOUGH_ALLOWANCE');
+    });
+  });
+
+  describe('Adding to stake should pass', async function () {
+    it('Trying to add to stake in the first cycle', async function () {
+      const stakeAmount = 200 * 10 ** 9;
+      const addToStakeAmount = 100 * 10 ** 9;
+      const days = 365;
+
+      await addStaker(contracts, owner, stakeAmount, days);
+
+      await addToStake(contracts, owner, addToStakeAmount);
+
+      await expect(
+        contracts.stake.getPendingAmount(owner.address)
+      ).to.eventually.equal(addToStakeAmount);
     });
   });
 });

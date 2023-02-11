@@ -12,6 +12,7 @@ contract Stake {
     struct Staker {
         uint256 stakedAmount;
         uint256 claimableAmount;
+        uint256 pendingAmount;
         uint256 lockedUntil;
         uint256 durationDays;
         // is stored as 0.01% units
@@ -63,6 +64,11 @@ contract Stake {
             newApy,
             cycleDays
         );
+
+        if (stakers[msg.sender].pendingAmount > 0) {
+            stakers[staker].stakedAmount += stakers[msg.sender].pendingAmount;
+            stakers[msg.sender].pendingAmount = 0;
+        }
     }
 
     // stakers
@@ -78,11 +84,30 @@ contract Stake {
 
         IERC20(stakeToken).transferFrom(msg.sender, address(this), amount);
 
-        stakers[msg.sender] = Staker(amount, 0, _now() + (days_ * 1 days), days_, 0, 1);
+        stakers[msg.sender] = Staker(amount, 0, 0, _now() + (days_ * 1 days), days_, 0, 1);
+    }
+
+    function addToStake(uint256 amount) public {
+        require(stakers[msg.sender].stakedAmount > 0, "STAKED_AMOUNT_IS_ZERO");
+        require(
+            stakers[msg.sender].currentCycle < _getFinalCycle(stakers[msg.sender].durationDays) - 1,
+            "FINAL_CYCLE"
+        );
+        require(
+            IERC20(stakeToken).allowance(msg.sender, address(this)) >= amount,
+            "NOT_ENOUGH_ALLOWANCE"
+        );
+
+        IERC20(stakeToken).transferFrom(msg.sender, address(this), amount);
+        stakers[msg.sender].pendingAmount += amount;
     }
 
     function getTotalStaked(address staker) public view returns (uint256) {
         return stakers[staker].stakedAmount + stakers[staker].claimableAmount;
+    }
+
+    function getPendingAmount(address staker) public view returns (uint256) {
+        return stakers[staker].pendingAmount;
     }
 
     function getApy(address staker) public view returns (uint256) {
