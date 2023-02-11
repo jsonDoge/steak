@@ -6,12 +6,12 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@prb/math/src/UD60x18.sol" as PRB;
 
 contract Stake {
-    uint256 public constant BLOCKS_IN_DAY = 7200;
-
     address private admin;
     address private stakeToken;
 
     mapping(address => uint256) private stakedAmount;
+    mapping(address => uint256) private lockedUntil;
+
     // is stored as 0.01% units
     mapping(address => uint256) private apy;
 
@@ -33,14 +33,16 @@ contract Stake {
 
     // stakers
 
-    function stake(uint256 amount) public {
+    function stake(uint256 amount, uint256 days_) public {
+        require(days_ >= 21 && days_ <= 365, "STAKING_DAYS_OUT_OF_BOUNDS");
         require(amount > 0, "CANT_STAKE_ZERO_AMOUNT");
         require(
             IERC20(stakeToken).allowance(msg.sender, address(this)) >= amount,
             "NOT_ENOUGH_ALLOWANCE"
         );
 
-        stakedAmount[msg.sender] += amount;
+        stakedAmount[msg.sender] = amount;
+        lockedUntil[msg.sender] = block.timestamp + days_ * 1 days;
     }
 
     function getTotalStaked(address addr) public view returns (uint256) {
