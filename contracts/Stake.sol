@@ -46,10 +46,10 @@ contract Stake {
 
         uint256 cycleDays = 28;
         if (stakers[staker].lockedUntil < _now()) {
-            cycleDays =
-                getStakeStartdate(stakers[staker].lockedUntil, stakers[staker].durationDays) -
-                stakers[staker].currentCycle *
-                28 days;
+            // last cycle
+            cycleDays = stakers[staker].durationDays % 28 == 0
+                ? stakers[staker].durationDays % 28
+                : 28;
         }
 
         stakers[staker].currentCycle += 1;
