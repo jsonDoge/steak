@@ -14,13 +14,12 @@ contract Stake {
         uint256 claimableAmount;
         uint256 lockedUntil;
         uint256 durationDays;
+        // is stored as 0.01% units
+        uint256 apy;
         uint8 currentCycle;
     }
 
     mapping(address => Staker) private stakers;
-
-    // is stored as 0.01% units
-    mapping(address => uint256) private apy;
 
     constructor(address admin_, address stakeToken_) {
         admin = admin_;
@@ -47,7 +46,7 @@ contract Stake {
             "CYCLE_HAS_NOT_ENDED"
         );
 
-        apy[staker] = newApy;
+        stakers[staker].apy = newApy;
 
         uint256 cycleDays = 28;
         if (stakers[staker].lockedUntil <= _now()) {
@@ -79,7 +78,7 @@ contract Stake {
 
         IERC20(stakeToken).transferFrom(msg.sender, address(this), amount);
 
-        stakers[msg.sender] = Staker(amount, 0, _now() + (days_ * 1 days), days_, 1);
+        stakers[msg.sender] = Staker(amount, 0, _now() + (days_ * 1 days), days_, 0, 1);
     }
 
     function getTotalStaked(address staker) public view returns (uint256) {
@@ -87,7 +86,7 @@ contract Stake {
     }
 
     function getApy(address staker) public view returns (uint256) {
-        return apy[staker];
+        return stakers[staker].apy;
     }
 
     function claimRewards() public {
@@ -115,7 +114,7 @@ contract Stake {
 
         // Optional: Not necessary to reset before second staking
         stakers[msg.sender].lockedUntil = 0;
-        apy[msg.sender] = 0;
+        stakers[msg.sender].apy = 0;
     }
 
     // math
