@@ -37,11 +37,12 @@ contract Stake {
     function setApy(address staker, uint256 newApy) public onlyAdmin {
         require(stakers[staker].stakedAmount > 0, "STAKER_NOT_FOUND");
         require(
-            stakers[staker].currentCycle != getFinalCycle(stakers[staker].durationDays),
+            stakers[staker].currentCycle != _getFinalCycle(stakers[staker].durationDays),
             "STAKING_FINISHED"
         );
         require(
-            _now() - getStakeStartdate(stakers[staker].lockedUntil, stakers[staker].durationDays) >=
+            _now() -
+                _getStakeStartdate(stakers[staker].lockedUntil, stakers[staker].durationDays) >=
                 stakers[staker].currentCycle * 28 days,
             "CYCLE_HAS_NOT_ENDED"
         );
@@ -160,14 +161,14 @@ contract Stake {
         return block.timestamp;
     }
 
-    function getStakeStartdate(
+    function _getStakeStartdate(
         uint256 lockedUntil,
         uint256 durationDays
     ) private pure returns (uint256) {
         return (lockedUntil - durationDays * 1 days);
     }
 
-    function getFinalCycle(uint256 days_) private pure returns (uint256) {
+    function _getFinalCycle(uint256 days_) private pure returns (uint256) {
         return (days_ / 28) + 2;
     }
 }
