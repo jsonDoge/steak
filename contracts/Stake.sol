@@ -134,12 +134,7 @@ contract Stake {
             stakers[msg.sender].claimableAmount + stakers[msg.sender].stakedAmount
         );
 
-        stakers[msg.sender].claimableAmount = 0;
-        stakers[msg.sender].stakedAmount = 0;
-
-        // Optional: Not necessary to reset before second staking
-        stakers[msg.sender].lockedUntil = 0;
-        stakers[msg.sender].apy = 0;
+        delete stakers[msg.sender];
     }
 
     // math
