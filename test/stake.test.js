@@ -11,7 +11,8 @@ const { expect } = chai;
 const { setupContracts } = require('./helpers/setup');
 const { waitTx, addStaker } = require('./helpers/utils');
 
-const DAYS_28 = 60 * 60 * 24 * 28;
+const DAYS_1 = 60 * 60 * 24 * 1;
+const DAYS_28 = DAYS_1 * 28;
 
 let contracts;
 let accounts;
@@ -121,15 +122,32 @@ describe('Stake', function () {
         waitTx(contracts.stake.connect(accounts[1]).setApy(owner.address, newApy))
       ).to.be.rejectedWith('ONLY_ADMIN');
     });
+
+    it('Trying to set APY before 28 days passed', async function () {
+      const newApy = 1;
+      const stakeAmount = 1;
+      const days = 365;
+
+      // stake
+      await addStaker(contracts, owner, stakeAmount, days);
+
+      await network.provider.send('evm_increaseTime', [DAYS_28 - 1]);
+
+      await expect(
+        waitTx(contracts.stake.connect(owner).setApy(owner.address, newApy))
+      ).to.be.rejectedWith('CYCLE_HAS_NOT_ENDED');
+    });
   });
 
   describe('Setting APY should pass', async function () {
-    it('Trying to set APY as admin', async function () {
+    it('Trying to set APY as admin after 28 days passed', async function () {
       const newApy = 1;
       const stakeAmount = 1;
       const days = 365;
 
       await addStaker(contracts, accounts[1], stakeAmount, days);
+
+      await network.provider.send('evm_increaseTime', [DAYS_28]);
 
       await waitTx(contracts.stake.connect(owner).setApy(accounts[1].address, newApy));
 
