@@ -9,9 +9,13 @@ contract Stake {
     address private admin;
     address private stakeToken;
 
-    mapping(address => uint256) private stakedAmount;
-    mapping(address => uint256) private claimableAmount;
-    mapping(address => uint256) private lockedUntil;
+    struct Staker {
+        uint256 stakedAmount;
+        uint256 claimableAmount;
+        uint256 lockedUntil;
+    }
+
+    mapping(address => Staker) private stakers;
 
     // is stored as 0.01% units
     mapping(address => uint256) private apy;
@@ -29,14 +33,18 @@ contract Stake {
     // admin
 
     function setApy(address staker, uint256 newApy) public onlyAdmin {
-        require(lockedUntil[staker] > 0, "STAKER_NOT_FOUND");
+        require(stakers[staker].stakedAmount > 0, "STAKER_NOT_FOUND");
 
         apy[staker] = newApy;
 
-        uint256 daysLeft = (lockedUntil[staker] - _now()) / 86400;
+        uint256 daysLeft = (stakers[staker].lockedUntil - _now()) / 86400;
         uint256 cycleDays = daysLeft > 28 ? 28 : daysLeft;
 
-        claimableAmount[staker] += getRewards(stakedAmount[staker], newApy, cycleDays);
+        stakers[staker].claimableAmount += getRewards(
+            stakers[staker].stakedAmount,
+            newApy,
+            cycleDays
+        );
     }
 
     // stakers
@@ -51,20 +59,24 @@ contract Stake {
 
         IERC20(stakeToken).transferFrom(msg.sender, address(this), amount);
 
-        stakedAmount[msg.sender] = amount;
-        lockedUntil[msg.sender] = _now() + (days_ * 1 days);
+        stakers[msg.sender].stakedAmount = amount;
+        stakers[msg.sender].lockedUntil = _now() + (days_ * 1 days);
     }
 
-    function getTotalStaked(address addr) public view returns (uint256) {
-        return stakedAmount[addr];
+    function getTotalStaked(address staker) public view returns (uint256) {
+        return stakers[staker].stakedAmount;
     }
 
-    function getApy(address addr) public view returns (uint256) {
-        return apy[addr];
+    function getApy(address staker) public view returns (uint256) {
+        return apy[staker];
     }
 
     function claimRewards() public {
-        require(claimableAmount[msg.sender] > 0, "CLAIMABLE_AMOUNT_IS_ZERO");
+        require(stakers[msg.sender].claimableAmount > 0, "CLAIMABLE_AMOUNT_IS_ZERO");
+
+        IERC20(stakeToken).transfer(msg.sender, stakers[msg.sender].claimableAmount);
+        stakers[msg.sender].claimableAmount = 0;
+    }
 
         IERC20(stakeToken).transfer(msg.sender, claimableAmount[msg.sender]);
         claimableAmount[msg.sender] = 0;
