@@ -69,6 +69,7 @@ contract Stake {
     // stakers
 
     function stake(uint256 amount, uint256 days_) public {
+        require(stakers[msg.sender].stakedAmount == 0, "ALREADY_STAKING");
         require(days_ >= 21 && days_ <= 365, "STAKING_DAYS_OUT_OF_BOUNDS");
         require(amount > 0, "CANT_STAKE_ZERO_AMOUNT");
         require(
