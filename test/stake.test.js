@@ -152,6 +152,24 @@ describe('Stake', function () {
         waitTx(contracts.stake.connect(owner).setApy(owner.address, newApy))
       ).to.be.rejectedWith('CYCLE_HAS_NOT_ENDED');
     });
+
+    it('Trying to set APY after staking has finished', async function () {
+      const newApy = 1;
+      const stakeAmount = 1;
+      const days = 21;
+
+      await addStaker(contracts, owner, stakeAmount, days);
+
+      await network.provider.send('evm_increaseTime', [DAYS_28]);
+
+      await waitTx(contracts.stake.connect(owner).setApy(owner.address, newApy));
+
+      await network.provider.send('evm_increaseTime', [DAYS_28]);
+
+      await expect(
+        waitTx(contracts.stake.connect(owner).setApy(owner.address, newApy))
+      ).to.be.rejectedWith('STAKING_FINISHED');
+    });
   });
 
   describe('Setting APY should pass', async function () {
