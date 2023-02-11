@@ -283,4 +283,55 @@ describe('Stake', function () {
       expect(resultInterestRate).to.equal(expectedInterestRate);
     });
   });
+
+  describe('Claiming all should fail', async function () {
+    it('Claiming all while still locked', async function () {
+      const stakeAmount = 200 * 10 ** 9;
+      const days = 28;
+
+      await addStaker(contracts, owner, stakeAmount, days);
+
+      await network.provider.send('evm_increaseTime', [DAYS_28 - DAYS_1]);
+
+      await expect(
+        waitTx(contracts.stake.connect(owner).claimAll())
+      ).to.be.rejectedWith('LOCKED');
+    });
+
+    it('Claiming all before final APY submission', async function () {
+      const stakeAmount = 200 * 10 ** 9;
+      const days = 28;
+
+      await addStaker(contracts, owner, stakeAmount, days);
+
+      await network.provider.send('evm_increaseTime', [DAYS_28]);
+
+      await expect(
+        waitTx(contracts.stake.connect(owner).claimAll())
+      ).to.be.rejectedWith('FINAL_APY_NOT_APPLIED');
+    });
+  });
+
+  describe('Claiming all should pass', async function () {
+    it('Claiming all partial cycle (21 days)', async function () {
+      const newApy = 100; // 1%
+      const stakeAmount = 200 * 10 ** 9;
+      const days = 21;
+
+      const balanceBefore = await contracts.stakeToken.balanceOf(owner.address);
+
+      await addStaker(contracts, owner, stakeAmount, days);
+
+      await network.provider.send('evm_increaseTime', [DAYS_28]);
+
+      await waitTx(contracts.stake.connect(owner).setApy(owner.address, newApy));
+      await waitTx(contracts.stake.connect(owner).claimAll());
+
+      const expectedReward = '114529737';
+
+      await expect(
+        contracts.stakeToken.balanceOf(owner.address)
+      ).to.eventually.equal(balanceBefore.add(expectedReward));
+    });
+  });
 });

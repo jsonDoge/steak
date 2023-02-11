@@ -97,8 +97,12 @@ contract Stake {
     }
 
     function claimAll() public {
-        require(stakers[msg.sender].lockedUntil > _now(), "STAKED_AMOUNT_IS_ZERO");
+        require(stakers[msg.sender].lockedUntil <= _now(), "LOCKED");
         require(stakers[msg.sender].stakedAmount > 0, "STAKED_AMOUNT_IS_ZERO");
+        require(
+            stakers[msg.sender].currentCycle == _getFinalCycle(stakers[msg.sender].durationDays),
+            "FINAL_APY_NOT_APPLIED"
+        );
 
         IERC20(stakeToken).transfer(
             msg.sender,
