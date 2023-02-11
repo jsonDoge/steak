@@ -82,6 +82,21 @@ describe('Stake', function () {
         waitTx(contracts.stake.connect(owner).stake(stakeAmount, days))
       ).to.be.rejectedWith('STAKING_DAYS_OUT_OF_BOUNDS');
     });
+
+    it('Try to stake again while already staking', async function () {
+      const stakeAmount = 1;
+      const days = 21;
+
+      await waitTx(
+        contracts.stakeToken.connect(owner).approve(contracts.stake.address, stakeAmount)
+      );
+
+      await waitTx(contracts.stake.connect(owner).stake(stakeAmount, days));
+
+      await expect(
+        waitTx(contracts.stake.connect(owner).stake(stakeAmount, days))
+      ).to.be.rejectedWith('ALREADY_STAKING');
+    });
   });
 
   describe('Staking should pass', async function () {
