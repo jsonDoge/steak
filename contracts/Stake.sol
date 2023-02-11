@@ -45,14 +45,14 @@ contract Stake {
         apy[staker] = newApy;
 
         uint256 cycleDays = 28;
-        if (stakers[staker].lockedUntil < _now()) {
+        if (stakers[staker].lockedUntil <= _now()) {
             // last cycle
-            cycleDays = stakers[staker].durationDays % 28 == 0
+            cycleDays = stakers[staker].durationDays % 28 != 0
                 ? stakers[staker].durationDays % 28
                 : 28;
+        } else {
+            stakers[staker].currentCycle += 1;
         }
-
-        stakers[staker].currentCycle += 1;
 
         stakers[staker].claimableAmount += getRewards(
             stakers[staker].stakedAmount + stakers[staker].claimableAmount,
