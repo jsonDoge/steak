@@ -173,6 +173,6 @@ contract Stake {
     }
 
     function _getFinalCycle(uint256 days_) private pure returns (uint256) {
-        return (days_ / 28) + 2;
+        return days_ % 28 == 0 ? (days_ / 28) + 1 : (days_ / 28) + 2;
     }
 }

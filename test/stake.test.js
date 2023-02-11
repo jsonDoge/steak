@@ -348,5 +348,26 @@ describe('Stake', function () {
         contracts.stakeToken.balanceOf(owner.address)
       ).to.eventually.equal(balanceBefore.add(expectedReward));
     });
+
+    it('Claiming all full cycle (28 days)', async function () {
+      const newApy = 100; // 1%
+      const stakeAmount = 200 * 10 ** 9;
+      const days = 28;
+
+      const balanceBefore = await contracts.stakeToken.balanceOf(owner.address);
+
+      await addStaker(contracts, owner, stakeAmount, days);
+
+      await network.provider.send('evm_increaseTime', [DAYS_28]);
+
+      await waitTx(contracts.stake.connect(owner).setApy(owner.address, newApy));
+      await waitTx(contracts.stake.connect(owner).claimAll());
+
+      const expectedReward = '152720889';
+
+      await expect(
+        contracts.stakeToken.balanceOf(owner.address)
+      ).to.eventually.equal(balanceBefore.add(expectedReward));
+    });
   });
 });
