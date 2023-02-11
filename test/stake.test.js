@@ -26,27 +26,72 @@ describe('Stake', function () {
   describe('Staking should fail', async function () {
     it('Try to stake without setting allowance', async function () {
       const stakeAmount = 1;
+      const days = 21;
+
       await expect(
-        waitTx(contracts.stake.connect(owner).stake(stakeAmount))
+        waitTx(contracts.stake.connect(owner).stake(stakeAmount, days))
       ).to.be.rejectedWith('NOT_ENOUGH_ALLOWANCE');
     });
 
     it('Try to stake 0 amount', async function () {
       const stakeAmount = 0;
+      const days = 21;
+
       await expect(
-        waitTx(contracts.stake.connect(owner).stake(stakeAmount))
+        waitTx(contracts.stake.connect(owner).stake(stakeAmount, days))
       ).to.be.rejectedWith('CANT_STAKE_ZERO_AMOUNT');
     });
-  });
 
-  describe('Staking should pass', async function () {
-    it('Try to stake after setting allowance', async function () {
+    it('Try to stake for less than 21 days', async function () {
       const stakeAmount = 1;
+      const days = 20;
 
       await waitTx(
         contracts.stakeToken.connect(owner).approve(contracts.stake.address, stakeAmount)
       );
-      await waitTx(contracts.stake.connect(owner).stake(stakeAmount));
+
+      await expect(
+        waitTx(contracts.stake.connect(owner).stake(stakeAmount, days))
+      ).to.be.rejectedWith('STAKING_DAYS_OUT_OF_BOUNDS');
+    });
+
+    it('Try to stake for more than 365 days', async function () {
+      const stakeAmount = 1;
+      const days = 366;
+
+      await waitTx(
+        contracts.stakeToken.connect(owner).approve(contracts.stake.address, stakeAmount)
+      );
+
+      await expect(
+        waitTx(contracts.stake.connect(owner).stake(stakeAmount, days))
+      ).to.be.rejectedWith('STAKING_DAYS_OUT_OF_BOUNDS');
+    });
+  });
+
+  describe('Staking should pass', async function () {
+    it('Try to stake after setting allowance and 21 days', async function () {
+      const stakeAmount = 1;
+      const days = 21;
+
+      await waitTx(
+        contracts.stakeToken.connect(owner).approve(contracts.stake.address, stakeAmount)
+      );
+      await waitTx(contracts.stake.connect(owner).stake(stakeAmount, days));
+
+      await expect(
+        contracts.stake.getTotalStaked(owner.address)
+      ).to.eventually.equal(stakeAmount);
+    });
+
+    it('Try to stake after setting allowance and 365 days', async function () {
+      const stakeAmount = 1;
+      const days = 365;
+
+      await waitTx(
+        contracts.stakeToken.connect(owner).approve(contracts.stake.address, stakeAmount)
+      );
+      await waitTx(contracts.stake.connect(owner).stake(stakeAmount, days));
 
       await expect(
         contracts.stake.getTotalStaked(owner.address)
@@ -86,7 +131,7 @@ describe('Stake', function () {
       await waitTx(
         contracts.stakeToken.connect(owner).approve(contracts.stake.address, stakeAmount)
       );
-      await waitTx(contracts.stake.connect(owner).stake(stakeAmount));
+      await waitTx(contracts.stake.connect(owner).stake(stakeAmount, days));
 
       // add apy
       await waitTx(contracts.stake.connect(owner).setApy(owner.address, newApy));
