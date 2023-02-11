@@ -82,7 +82,7 @@ contract Stake {
     }
 
     function getTotalStaked(address staker) public view returns (uint256) {
-        return stakers[staker].stakedAmount;
+        return stakers[staker].stakedAmount + stakers[staker].claimableAmount;
     }
 
     function getApy(address staker) public view returns (uint256) {
