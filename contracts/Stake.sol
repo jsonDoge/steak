@@ -60,7 +60,7 @@ contract Stake {
             PRB.sub(
                 PRB.pow(
                     PRB.add(PRB.convert(1), PRB.div(PRB.convert(apy_), PRB.convert(10 ** 4))),
-                    PRB.div(PRB.convert(1), PRB.convert(365))
+                    PRB.inv(PRB.convert(365))
                 ),
                 PRB.convert(1)
             );
