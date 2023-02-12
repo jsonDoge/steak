@@ -3,10 +3,13 @@
 pragma solidity ^0.8;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@prb/math/src/UD60x18.sol" as PRB;
 
 contract Stake is ReentrancyGuard {
+    using SafeERC20 for IERC20;
+
     // full number 0.00273972602739726027397... @prb/math supports 18 decimals
     uint256 private constant DIV_1_BY_365 = 2739726027397260;
 
@@ -89,10 +92,7 @@ contract Stake is ReentrancyGuard {
         );
 
         stakers[msg.sender] = Staker(amount, 0, 0, _now() + (days_ * 1 days), days_, 0, 1);
-        require(
-            IERC20(stakeToken).transferFrom(msg.sender, address(this), amount),
-            "TRANSFER_FAILED"
-        );
+        IERC20(stakeToken).safeTransferFrom(msg.sender, address(this), amount);
     }
 
     function addToStake(uint256 amount) public nonReentrant {
@@ -108,10 +108,7 @@ contract Stake is ReentrancyGuard {
         );
 
         stakers[msg.sender].pendingAmount += amount;
-        require(
-            IERC20(stakeToken).transferFrom(msg.sender, address(this), amount),
-            "TRANSFER_FAILED"
-        );
+        IERC20(stakeToken).safeTransferFrom(msg.sender, address(this), amount);
     }
 
     function getTotalStaked(address staker) public view returns (uint256) {
@@ -129,10 +126,7 @@ contract Stake is ReentrancyGuard {
     function claimRewards() public nonReentrant {
         require(stakers[msg.sender].claimableAmount > 0, "CLAIMABLE_AMOUNT_IS_ZERO");
 
-        require(
-            IERC20(stakeToken).transfer(msg.sender, stakers[msg.sender].claimableAmount),
-            "TRANSFER_FAILED"
-        );
+        IERC20(stakeToken).safeTransfer(msg.sender, stakers[msg.sender].claimableAmount);
         stakers[msg.sender].claimableAmount = 0;
     }
 
@@ -144,12 +138,9 @@ contract Stake is ReentrancyGuard {
             "FINAL_APY_NOT_APPLIED"
         );
 
-        require(
-            IERC20(stakeToken).transfer(
-                msg.sender,
-                stakers[msg.sender].claimableAmount + stakers[msg.sender].stakedAmount
-            ),
-            "TRANSFER_FAILED"
+        IERC20(stakeToken).safeTransfer(
+            msg.sender,
+            stakers[msg.sender].claimableAmount + stakers[msg.sender].stakedAmount
         );
 
         delete stakers[msg.sender];
