@@ -48,12 +48,12 @@ To run only E2E tests:
 
 -math-
 
-- getInterestRateFromApy(uint256 apy_) - returns provided APYs compound interest rate of **1 day**.
+- getInterestRateFromApy(uint256 apy) - returns provided APYs compound interest rate of **1 day**.
 
-- getRewards(uint256 s, uint256 apy_, uint256 days_) - returns interest reward amount from provided arguments.
+- getRewards(uint256 s, uint256 apy, uint256 days_) - returns interest reward amount from provided arguments.
   - s - initial staked amount
   - apy - annual percentage yield
-  - days - duration in days saked.
+  - days - duration in days saked
 
 -helpers-
 
@@ -69,7 +69,7 @@ To run only E2E tests:
 - All state variables are private (developer preference) and only disclosed in exlipcit public functions:
   - admin - address of the deployer
   - stakeToken - address of the staking token (ERC20)
-  - stakers - a mapping of staker addresses to a Staker struct.
+  - stakers - a mapping of staker addresses to a Staker struct
 - Staker struct is composed of:
 <pre>
   uint256 stakedAmount;     [locked actively staking amount]
@@ -83,11 +83,22 @@ To run only E2E tests:
 
 ## NOTES
 
-
 - @prb/math package used for math performs rounding down in all their math operations. This can cause results with exact values like 100000000... become 99999.... The values lost are very isignificant, but are visually unpleasant. This guaranties that the use does not receive more than he should. Otherwise we could try applying rounding up manually, but this would of course require more gas.
 
 - setApy function can be called at any time after the each cycle. Even if multiplecycle duration passed (example 56 days) the admin can immediately set both APYs for the first and second cycles. WARNING: this does mean that the staker will not be able to claim rewards until the setApy will be called.
 
 - Staking Contract has to be manually supplied funds for staking rewards. Currently there is no function to withdraw them.
 
-- Staker is not allowed to stake a bigger amount than 1e58 due to @prb/math supporting numbers up to 59/60 integer digits
+- Staker is not allowed to stake a bigger amount than 1e58 due to @prb/math supporting numbers up to 59/60 integer digits.
+
+## TODO
+
+This section is dedicated to what I would work to improve further, but due to time limits and this being an interview in my opinion the code is enough to show my current skills.
+
+- Investigate @prb/math further to see how to avoid minor discrepancies or look for more accurate alternative.
+
+- Add events to be able to track staking progress offchain.
+
+- Look into refactoring current setApy logic to avoid multiple getRewards calculations and do it in one function when staker is claiming. This should provide better accuracy.
+
+- Look for a way to test private methods, so that all test would always be running.

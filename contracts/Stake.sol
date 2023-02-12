@@ -39,7 +39,6 @@ contract Stake is ReentrancyGuard {
     // admin
 
     function setApy(address staker, uint256 newApy) public onlyAdmin {
-        // Safe guard for too big APY
         require(newApy <= 10000, "APY_TOO_BIG");
         require(stakers[staker].stakedAmount > 0, "STAKER_NOT_FOUND");
         require(
@@ -147,14 +146,14 @@ contract Stake is ReentrancyGuard {
     // math
 
     // Daily compound interest rate
-    // apy_: apy * 10 ** 2 (multiplied by 10**2 for decimal points)
+    // apy: annual percentage yield * 10 ** 2 (multiplied by 10**2 for decimal points)
     // formula: ((1 + apy / 100) ^ (1 / 365)) - 1
 
-    function getInterestRateFromApy(uint256 apy_) private pure returns (PRB.UD60x18) {
+    function getInterestRateFromApy(uint256 apy) private pure returns (PRB.UD60x18) {
         return
             PRB.sub(
                 PRB.pow(
-                    PRB.add(PRB.convert(1), PRB.div(PRB.convert(apy_), PRB.convert(10 ** 4))),
+                    PRB.add(PRB.convert(1), PRB.div(PRB.convert(apy), PRB.convert(10 ** 4))),
                     PRB.ud60x18(DIV_1_BY_365)
                 ),
                 PRB.convert(1)
@@ -170,14 +169,14 @@ contract Stake is ReentrancyGuard {
     // days: staking duration in days
 
     // formula: s * ((1 + rate) ^ days) - s
-    function getRewards(uint256 s, uint256 apy_, uint256 days_) private pure returns (uint256) {
+    function getRewards(uint256 s, uint256 apy, uint256 days_) private pure returns (uint256) {
         return
             PRB.convert(
                 PRB.sub(
                     PRB.mul(
                         PRB.convert(s),
                         PRB.pow(
-                            PRB.add(PRB.convert(1), getInterestRateFromApy(apy_)),
+                            PRB.add(PRB.convert(1), getInterestRateFromApy(apy)),
                             PRB.convert(days_)
                         )
                     ),
