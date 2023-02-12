@@ -7,6 +7,9 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@prb/math/src/UD60x18.sol" as PRB;
 
 contract Stake is ReentrancyGuard {
+    // full number 0.00273972602739726027397... @prb/math supports 18 decimals
+    uint256 private constant DIV_1_BY_365 = 2739726027397260;
+
     address private admin;
     address private stakeToken;
 
@@ -152,7 +155,7 @@ contract Stake is ReentrancyGuard {
             PRB.sub(
                 PRB.pow(
                     PRB.add(PRB.convert(1), PRB.div(PRB.convert(apy_), PRB.convert(10 ** 4))),
-                    PRB.inv(PRB.convert(365))
+                    PRB.ud60x18(DIV_1_BY_365)
                 ),
                 PRB.convert(1)
             );
