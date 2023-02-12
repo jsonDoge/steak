@@ -440,6 +440,17 @@ describe('Stake', function () {
 
       expect(rewards).to.equal(expectedRewards);
     });
+
+    it('Getting rewards of a staked amount and 0% apy', async function () {
+      const apy = 0;
+      const stakeAmount = 200 * 10 ** 9;
+      const days = 28;
+
+      const rewards = await contracts.stake.getRewards(stakeAmount, apy, days);
+      const expectedRewards = '0';
+
+      expect(rewards).to.equal(expectedRewards);
+    });
   });
 
   describe('Claiming all should fail', async function () {
