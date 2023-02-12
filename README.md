@@ -1,4 +1,4 @@
-# Steak staking contracts
+# 🥩Steak staking contracts
 
 Contracts
 - Stake.sol - staking
