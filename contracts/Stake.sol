@@ -3,9 +3,10 @@
 pragma solidity ^0.8;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@prb/math/src/UD60x18.sol" as PRB;
 
-contract Stake {
+contract Stake is ReentrancyGuard {
     address private admin;
     address private stakeToken;
 
@@ -75,7 +76,7 @@ contract Stake {
 
     // stakers
 
-    function stake(uint256 amount, uint256 days_) public {
+    function stake(uint256 amount, uint256 days_) public nonReentrant {
         require(stakers[msg.sender].stakedAmount == 0, "ALREADY_STAKING");
         require(days_ >= 21 && days_ <= 365, "STAKING_DAYS_OUT_OF_BOUNDS");
         require(amount > 0, "CANT_STAKE_ZERO_AMOUNT");
@@ -88,7 +89,7 @@ contract Stake {
         IERC20(stakeToken).transferFrom(msg.sender, address(this), amount);
     }
 
-    function addToStake(uint256 amount) public {
+    function addToStake(uint256 amount) public nonReentrant {
         require(stakers[msg.sender].stakedAmount > 0, "STAKED_AMOUNT_IS_ZERO");
         require(
             stakers[msg.sender].currentCycle < _getFinalCycle(stakers[msg.sender].durationDays) - 1,
@@ -115,14 +116,14 @@ contract Stake {
         return stakers[staker].apy;
     }
 
-    function claimRewards() public {
+    function claimRewards() public nonReentrant {
         require(stakers[msg.sender].claimableAmount > 0, "CLAIMABLE_AMOUNT_IS_ZERO");
 
         IERC20(stakeToken).transfer(msg.sender, stakers[msg.sender].claimableAmount);
         stakers[msg.sender].claimableAmount = 0;
     }
 
-    function claimAll() public {
+    function claimAll() public nonReentrant {
         require(stakers[msg.sender].lockedUntil <= _now(), "LOCKED");
         require(stakers[msg.sender].stakedAmount > 0, "STAKED_AMOUNT_IS_ZERO");
         require(
