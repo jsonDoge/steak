@@ -98,11 +98,7 @@ describe('Stake', function () {
       const stakeAmount = 1;
       const days = 21;
 
-      await waitTx(
-        contracts.stakeToken.connect(staker).approve(contracts.stake.address, stakeAmount)
-      );
-
-      await waitTx(contracts.stake.connect(staker).stake(stakeAmount, days));
+      await addStaker(contracts, staker, stakeAmount, days);
 
       await expect(
         waitTx(contracts.stake.connect(staker).stake(stakeAmount, days))
@@ -115,10 +111,7 @@ describe('Stake', function () {
       const stakeAmount = 1;
       const days = 21;
 
-      await waitTx(
-        contracts.stakeToken.connect(staker).approve(contracts.stake.address, stakeAmount)
-      );
-      await waitTx(contracts.stake.connect(staker).stake(stakeAmount, days));
+      await addStaker(contracts, staker, stakeAmount, days);
 
       await expect(
         contracts.stake.getTotalStaked(staker.address)
@@ -129,10 +122,7 @@ describe('Stake', function () {
       const stakeAmount = 1;
       const days = 365;
 
-      await waitTx(
-        contracts.stakeToken.connect(staker).approve(contracts.stake.address, stakeAmount)
-      );
-      await waitTx(contracts.stake.connect(staker).stake(stakeAmount, days));
+      await addStaker(contracts, staker, stakeAmount, days);
 
       await expect(
         contracts.stake.getTotalStaked(staker.address)
