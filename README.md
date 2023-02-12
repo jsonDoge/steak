@@ -97,6 +97,8 @@ This section is dedicated to what I would work to improve further, but due to ti
 
 - Investigate @prb/math further to see how to avoid minor discrepancies or look for more accurate alternative.
 
+- Improve interest formula to use less math functions to achieve same result.
+
 - Add events to be able to track staking progress offchain.
 
 - Look into refactoring current setApy logic to avoid multiple getRewards calculations and do it in one function when staker is claiming. This should provide better accuracy.
