@@ -30,9 +30,9 @@ To run only E2E tests:
 
 -staker-
 
-- stake(uint256 amount, uint256 days_) - used for staking. The staker has to provide the initial amount (0 < x) and desired amount of days (21 <= x <= 365).
+- stake(uint256 amount, uint256 days_) - used for staking. The staker has to provide the initial amount (0 < x < 1e58) and desired amount of days (21 <= x <= 365).
 
-- addToStake(uint256 amount) - used for adding to already staked amount. The staker can add as much as he wants (0 < x) as many times as he wants as long as current cycle is not the last one. This restriction is added as there is no reason to add to stake since the extra interest from extra amount will not be applied by the end of staking.
+- addToStake(uint256 amount) - used for adding to already staked amount. The staker can add as much as he wants (0 < x < 1e58) as many times as he wants as long as current cycle is not the last one. This restriction is added as there is no reason to add to stake since the extra interest from extra amount will not be applied by the end of staking.
 
 - getTotalStaked(address staker) - returns stakers total amount used for interest calculation (staked + claimable).
 
@@ -89,3 +89,5 @@ To run only E2E tests:
 - setApy function can be called at any time after the each cycle. Even if multiplecycle duration passed (example 56 days) the admin can immediately set both APYs for the first and second cycles. WARNING: this does mean that the staker will not be able to claim rewards until the setApy will be called.
 
 - Staking Contract has to be manually supplied funds for staking rewards. Currently there is no function to withdraw them.
+
+- Staker is not allowed to stake a bigger amount than 1e58 due to @prb/math supporting numbers up to 59/60 integer digits
