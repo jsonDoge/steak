@@ -138,6 +138,28 @@ describe('Stake', function () {
         contracts.stake.getTotalStaked(staker.address)
       ).to.eventually.equal(stakeAmount);
     });
+
+    it('Two stakers at the same time', async function () {
+      const stakeAmount = 1;
+      const days = 365;
+
+      // fund another staker
+      await contracts.stakeToken.connect(admin).transfer(
+        accounts[2].address,
+        BN(1).times(BN(10).pow(18)).toFixed()
+      );
+
+      await addStaker(contracts, staker, stakeAmount, days);
+      await addStaker(contracts, accounts[2], stakeAmount + 1, days);
+
+      await expect(
+        contracts.stake.getTotalStaked(staker.address)
+      ).to.eventually.equal(stakeAmount);
+
+      await expect(
+        contracts.stake.getTotalStaked(accounts[2].address)
+      ).to.eventually.equal(stakeAmount + 1);
+    });
   });
 
   describe('Setting APY should fail', async function () {
