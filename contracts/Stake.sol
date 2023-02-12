@@ -84,9 +84,8 @@ contract Stake {
             "NOT_ENOUGH_ALLOWANCE"
         );
 
-        IERC20(stakeToken).transferFrom(msg.sender, address(this), amount);
-
         stakers[msg.sender] = Staker(amount, 0, 0, _now() + (days_ * 1 days), days_, 0, 1);
+        IERC20(stakeToken).transferFrom(msg.sender, address(this), amount);
     }
 
     function addToStake(uint256 amount) public {
@@ -100,8 +99,8 @@ contract Stake {
             "NOT_ENOUGH_ALLOWANCE"
         );
 
-        IERC20(stakeToken).transferFrom(msg.sender, address(this), amount);
         stakers[msg.sender].pendingAmount += amount;
+        IERC20(stakeToken).transferFrom(msg.sender, address(this), amount);
     }
 
     function getTotalStaked(address staker) public view returns (uint256) {
