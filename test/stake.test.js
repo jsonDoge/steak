@@ -16,25 +16,27 @@ const DAYS_28 = DAYS_1 * 28;
 
 let contracts;
 let accounts;
-let owner;
+let admin;
+let staker;
 
 describe('Stake', function () {
 
   beforeEach('Setup', async function () {
     accounts = await ethers.getSigners();
-    [owner] = accounts;
+    [admin, staker] = accounts;
 
-    contracts = await setupContracts(owner.address);
+    contracts = await setupContracts(admin.address);
 
     // fund staking contract
-    await contracts.stakeToken.connect(owner).transfer(
+    await contracts.stakeToken.connect(admin).transfer(
       contracts.stake.address,
       BN(100).times(BN(10).pow(18)).toFixed()
     );
 
-    await contracts.stakeToken.connect(owner).transfer(
-      accounts[1].address,
-      BN(100).times(BN(10).pow(18)).toFixed()
+    // fund staker
+    await contracts.stakeToken.connect(admin).transfer(
+      staker.address,
+      BN(400).times(BN(10).pow(18)).toFixed()
     );
   });
 
@@ -44,7 +46,7 @@ describe('Stake', function () {
       const days = 21;
 
       await expect(
-        waitTx(contracts.stake.connect(owner).stake(stakeAmount, days))
+        waitTx(contracts.stake.connect(staker).stake(stakeAmount, days))
       ).to.be.rejectedWith('NOT_ENOUGH_ALLOWANCE');
     });
 
@@ -53,7 +55,7 @@ describe('Stake', function () {
       const days = 21;
 
       await expect(
-        waitTx(contracts.stake.connect(owner).stake(stakeAmount, days))
+        waitTx(contracts.stake.connect(staker).stake(stakeAmount, days))
       ).to.be.rejectedWith('CANT_STAKE_ZERO_AMOUNT');
     });
 
@@ -62,11 +64,11 @@ describe('Stake', function () {
       const days = 20;
 
       await waitTx(
-        contracts.stakeToken.connect(owner).approve(contracts.stake.address, stakeAmount)
+        contracts.stakeToken.connect(staker).approve(contracts.stake.address, stakeAmount)
       );
 
       await expect(
-        waitTx(contracts.stake.connect(owner).stake(stakeAmount, days))
+        waitTx(contracts.stake.connect(staker).stake(stakeAmount, days))
       ).to.be.rejectedWith('STAKING_DAYS_OUT_OF_BOUNDS');
     });
 
@@ -75,11 +77,11 @@ describe('Stake', function () {
       const days = 366;
 
       await waitTx(
-        contracts.stakeToken.connect(owner).approve(contracts.stake.address, stakeAmount)
+        contracts.stakeToken.connect(staker).approve(contracts.stake.address, stakeAmount)
       );
 
       await expect(
-        waitTx(contracts.stake.connect(owner).stake(stakeAmount, days))
+        waitTx(contracts.stake.connect(staker).stake(stakeAmount, days))
       ).to.be.rejectedWith('STAKING_DAYS_OUT_OF_BOUNDS');
     });
 
@@ -88,13 +90,13 @@ describe('Stake', function () {
       const days = 21;
 
       await waitTx(
-        contracts.stakeToken.connect(owner).approve(contracts.stake.address, stakeAmount)
+        contracts.stakeToken.connect(staker).approve(contracts.stake.address, stakeAmount)
       );
 
-      await waitTx(contracts.stake.connect(owner).stake(stakeAmount, days));
+      await waitTx(contracts.stake.connect(staker).stake(stakeAmount, days));
 
       await expect(
-        waitTx(contracts.stake.connect(owner).stake(stakeAmount, days))
+        waitTx(contracts.stake.connect(staker).stake(stakeAmount, days))
       ).to.be.rejectedWith('ALREADY_STAKING');
     });
   });
@@ -105,12 +107,12 @@ describe('Stake', function () {
       const days = 21;
 
       await waitTx(
-        contracts.stakeToken.connect(owner).approve(contracts.stake.address, stakeAmount)
+        contracts.stakeToken.connect(staker).approve(contracts.stake.address, stakeAmount)
       );
-      await waitTx(contracts.stake.connect(owner).stake(stakeAmount, days));
+      await waitTx(contracts.stake.connect(staker).stake(stakeAmount, days));
 
       await expect(
-        contracts.stake.getTotalStaked(owner.address)
+        contracts.stake.getTotalStaked(staker.address)
       ).to.eventually.equal(stakeAmount);
     });
 
@@ -119,12 +121,12 @@ describe('Stake', function () {
       const days = 365;
 
       await waitTx(
-        contracts.stakeToken.connect(owner).approve(contracts.stake.address, stakeAmount)
+        contracts.stakeToken.connect(staker).approve(contracts.stake.address, stakeAmount)
       );
-      await waitTx(contracts.stake.connect(owner).stake(stakeAmount, days));
+      await waitTx(contracts.stake.connect(staker).stake(stakeAmount, days));
 
       await expect(
-        contracts.stake.getTotalStaked(owner.address)
+        contracts.stake.getTotalStaked(staker.address)
       ).to.eventually.equal(stakeAmount);
     });
   });
@@ -134,7 +136,7 @@ describe('Stake', function () {
       const newApy = 1;
 
       await expect(
-        waitTx(contracts.stake.connect(accounts[1]).setApy(owner.address, newApy))
+        waitTx(contracts.stake.connect(staker).setApy(admin.address, newApy))
       ).to.be.rejectedWith('ONLY_ADMIN');
     });
 
@@ -143,12 +145,12 @@ describe('Stake', function () {
       const stakeAmount = 1;
       const days = 365;
 
-      await addStaker(contracts, owner, stakeAmount, days);
+      await addStaker(contracts, staker, stakeAmount, days);
 
       await network.provider.send('evm_increaseTime', [DAYS_28]);
 
       await expect(
-        waitTx(contracts.stake.connect(owner).setApy(owner.address, newApy))
+        waitTx(contracts.stake.connect(admin).setApy(staker.address, newApy))
       ).to.be.rejectedWith('APY_TOO_BIG');
     });
 
@@ -158,12 +160,12 @@ describe('Stake', function () {
       const stakeAmount = 1;
       const days = 365;
 
-      await addStaker(contracts, owner, stakeAmount, days);
+      await addStaker(contracts, staker, stakeAmount, days);
 
       await network.provider.send('evm_increaseTime', [DAYS_28 - DAYS_1]);
 
       await expect(
-        waitTx(contracts.stake.connect(owner).setApy(owner.address, newApy))
+        waitTx(contracts.stake.connect(admin).setApy(staker.address, newApy))
       ).to.be.rejectedWith('CYCLE_HAS_NOT_ENDED');
     });
 
@@ -172,14 +174,14 @@ describe('Stake', function () {
       const stakeAmount = 1;
       const days = 365;
 
-      await addStaker(contracts, owner, stakeAmount, days);
+      await addStaker(contracts, staker, stakeAmount, days);
 
       await network.provider.send('evm_increaseTime', [DAYS_28]);
 
-      await waitTx(contracts.stake.connect(owner).setApy(owner.address, newApy));
+      await waitTx(contracts.stake.connect(admin).setApy(staker.address, newApy));
 
       await expect(
-        waitTx(contracts.stake.connect(owner).setApy(owner.address, newApy))
+        waitTx(contracts.stake.connect(admin).setApy(staker.address, newApy))
       ).to.be.rejectedWith('CYCLE_HAS_NOT_ENDED');
     });
 
@@ -188,16 +190,16 @@ describe('Stake', function () {
       const stakeAmount = 1;
       const days = 21;
 
-      await addStaker(contracts, owner, stakeAmount, days);
+      await addStaker(contracts, staker, stakeAmount, days);
 
       await network.provider.send('evm_increaseTime', [DAYS_28]);
 
-      await waitTx(contracts.stake.connect(owner).setApy(owner.address, newApy));
+      await waitTx(contracts.stake.connect(admin).setApy(staker.address, newApy));
 
       await network.provider.send('evm_increaseTime', [DAYS_28]);
 
       await expect(
-        waitTx(contracts.stake.connect(owner).setApy(owner.address, newApy))
+        waitTx(contracts.stake.connect(admin).setApy(staker.address, newApy))
       ).to.be.rejectedWith('STAKING_FINISHED');
     });
   });
@@ -208,14 +210,14 @@ describe('Stake', function () {
       const stakeAmount = 1;
       const days = 365;
 
-      await addStaker(contracts, accounts[1], stakeAmount, days);
+      await addStaker(contracts, staker, stakeAmount, days);
 
       await network.provider.send('evm_increaseTime', [DAYS_28]);
 
-      await waitTx(contracts.stake.connect(owner).setApy(accounts[1].address, newApy));
+      await waitTx(contracts.stake.connect(admin).setApy(staker.address, newApy));
 
       await expect(
-        contracts.stake.getApy(accounts[1].address)
+        contracts.stake.getApy(staker.address)
       ).to.eventually.equal(newApy);
     });
 
@@ -224,14 +226,14 @@ describe('Stake', function () {
       const stakeAmount = 1;
       const days = 21;
 
-      await addStaker(contracts, accounts[1], stakeAmount, days);
+      await addStaker(contracts, staker, stakeAmount, days);
 
       await network.provider.send('evm_increaseTime', [DAYS_28]);
 
-      await waitTx(contracts.stake.connect(owner).setApy(accounts[1].address, newApy));
+      await waitTx(contracts.stake.connect(admin).setApy(staker.address, newApy));
 
       await expect(
-        contracts.stake.getApy(accounts[1].address)
+        contracts.stake.getApy(staker.address)
       ).to.eventually.equal(newApy);
     });
 
@@ -242,23 +244,23 @@ describe('Stake', function () {
 
       const days = 365;
 
-      await addStaker(contracts, owner, stakeAmount, days);
-      await addToStake(contracts, owner, addToStakeAmount);
+      await addStaker(contracts, staker, stakeAmount, days);
+      await addToStake(contracts, staker, addToStakeAmount);
 
       await network.provider.send('evm_increaseTime', [DAYS_28]);
 
-      await waitTx(contracts.stake.connect(owner).setApy(owner.address, newApy));
+      await waitTx(contracts.stake.connect(admin).setApy(staker.address, newApy));
 
       const expectedReward = '152720889';
 
       await expect(
-        contracts.stake.getApy(owner.address)
+        contracts.stake.getApy(staker.address)
       ).to.eventually.equal(newApy);
       await expect(
-        contracts.stake.getPendingAmount(owner.address)
+        contracts.stake.getPendingAmount(staker.address)
       ).to.eventually.equal(0);
       await expect(
-        contracts.stake.getTotalStaked(owner.address)
+        contracts.stake.getTotalStaked(staker.address)
       ).to.eventually.equal(BN(stakeAmount).plus(addToStakeAmount).plus(expectedReward));
     });
 
@@ -269,28 +271,28 @@ describe('Stake', function () {
 
       const days = 365;
 
-      await addStaker(contracts, owner, stakeAmount, days);
-      await addToStake(contracts, owner, addToStakeAmount);
+      await addStaker(contracts, staker, stakeAmount, days);
+      await addToStake(contracts, staker, addToStakeAmount);
 
       await network.provider.send('evm_increaseTime', [DAYS_28]);
 
-      await waitTx(contracts.stake.connect(owner).setApy(owner.address, newApy));
+      await waitTx(contracts.stake.connect(admin).setApy(staker.address, newApy));
 
       await network.provider.send('evm_increaseTime', [DAYS_28]);
 
-      await waitTx(contracts.stake.connect(owner).setApy(owner.address, newApy));
+      await waitTx(contracts.stake.connect(admin).setApy(staker.address, newApy));
 
       const expectedRewardFirstCycle =  '152720889';
       const expectedRewardSecondCycle = '229197953';
 
       await expect(
-        contracts.stake.getApy(owner.address)
+        contracts.stake.getApy(staker.address)
       ).to.eventually.equal(newApy);
       await expect(
-        contracts.stake.getPendingAmount(owner.address)
+        contracts.stake.getPendingAmount(staker.address)
       ).to.eventually.equal(0);
       await expect(
-        contracts.stake.getTotalStaked(owner.address)
+        contracts.stake.getTotalStaked(staker.address)
       ).to.eventually.equal(
         BN(stakeAmount)
           .plus(addToStakeAmount)
@@ -305,21 +307,21 @@ describe('Stake', function () {
       const stakeAmount = 200 * 10 ** 9;
       const days = 365;
 
-      await addStaker(contracts, accounts[1], stakeAmount, days);
+      await addStaker(contracts, staker, stakeAmount, days);
 
       await network.provider.send('evm_increaseTime', [DAYS_28]);
       await network.provider.send('evm_increaseTime', [DAYS_28]);
 
-      await waitTx(contracts.stake.connect(owner).setApy(accounts[1].address, newApy1));
-      await waitTx(contracts.stake.connect(owner).setApy(accounts[1].address, newApy2));
+      await waitTx(contracts.stake.connect(admin).setApy(staker.address, newApy1));
+      await waitTx(contracts.stake.connect(admin).setApy(staker.address, newApy2));
 
       const expectedReward = '457005080';
 
       await expect(
-        contracts.stake.getApy(accounts[1].address)
+        contracts.stake.getApy(staker.address)
       ).to.eventually.equal(newApy2);
       await expect(
-        contracts.stake.getTotalStaked(accounts[1].address)
+        contracts.stake.getTotalStaked(staker.address)
       ).to.eventually.equal(BN(stakeAmount).plus(expectedReward));
     });
   });
@@ -330,16 +332,16 @@ describe('Stake', function () {
       const stakeAmount = 10000;
       const days = 365;
 
-      await addStaker(contracts, owner, stakeAmount, days);
+      await addStaker(contracts, staker, stakeAmount, days);
 
       await network.provider.send('evm_increaseTime', [DAYS_28]);
 
-      await waitTx(contracts.stake.connect(owner).setApy(owner.address, newApy));
+      await waitTx(contracts.stake.connect(admin).setApy(staker.address, newApy));
 
-      await waitTx(contracts.stake.connect(owner).claimRewards());
+      await waitTx(contracts.stake.connect(staker).claimRewards());
 
       await expect(
-        waitTx(contracts.stake.connect(owner).claimRewards())
+        waitTx(contracts.stake.connect(staker).claimRewards())
       ).to.be.rejectedWith('CLAIMABLE_AMOUNT_IS_ZERO');
     });
   });
@@ -350,19 +352,19 @@ describe('Stake', function () {
       const stakeAmount = 200 * 10 ** 9;
       const days = 365;
 
-      await addStaker(contracts, owner, stakeAmount, days);
+      await addStaker(contracts, staker, stakeAmount, days);
 
       await network.provider.send('evm_increaseTime', [DAYS_28]);
 
-      await waitTx(contracts.stake.connect(owner).setApy(owner.address, newApy));
+      await waitTx(contracts.stake.connect(admin).setApy(staker.address, newApy));
 
-      const balanceBefore = await contracts.stakeToken.balanceOf(owner.address);
-      await waitTx(contracts.stake.connect(owner).claimRewards());
+      const balanceBefore = await contracts.stakeToken.balanceOf(staker.address);
+      await waitTx(contracts.stake.connect(staker).claimRewards());
 
       const expectedReward = '152720889';
 
       await expect(
-        contracts.stakeToken.balanceOf(owner.address)
+        contracts.stakeToken.balanceOf(staker.address)
       ).to.eventually.equal(balanceBefore.add(expectedReward));
     });
 
@@ -371,19 +373,19 @@ describe('Stake', function () {
       const stakeAmount = 200 * 10 ** 9;
       const days = 21;
 
-      await addStaker(contracts, owner, stakeAmount, days);
+      await addStaker(contracts, staker, stakeAmount, days);
 
       await network.provider.send('evm_increaseTime', [DAYS_28]);
 
-      await waitTx(contracts.stake.connect(owner).setApy(owner.address, newApy));
+      await waitTx(contracts.stake.connect(admin).setApy(staker.address, newApy));
 
-      const balanceBefore = await contracts.stakeToken.balanceOf(owner.address);
-      await waitTx(contracts.stake.connect(owner).claimRewards());
+      const balanceBefore = await contracts.stakeToken.balanceOf(staker.address);
+      await waitTx(contracts.stake.connect(staker).claimRewards());
 
       const expectedReward = '114529737';
 
       await expect(
-        contracts.stakeToken.balanceOf(owner.address)
+        contracts.stakeToken.balanceOf(staker.address)
       ).to.eventually.equal(balanceBefore.add(expectedReward));
     });
   });
@@ -408,12 +410,12 @@ describe('Stake', function () {
       const stakeAmount = 200 * 10 ** 9;
       const days = 28;
 
-      await addStaker(contracts, owner, stakeAmount, days);
+      await addStaker(contracts, staker, stakeAmount, days);
 
       await network.provider.send('evm_increaseTime', [DAYS_28 - DAYS_1]);
 
       await expect(
-        waitTx(contracts.stake.connect(owner).claimAll())
+        waitTx(contracts.stake.connect(staker).claimAll())
       ).to.be.rejectedWith('LOCKED');
     });
 
@@ -421,12 +423,12 @@ describe('Stake', function () {
       const stakeAmount = 200 * 10 ** 9;
       const days = 28;
 
-      await addStaker(contracts, owner, stakeAmount, days);
+      await addStaker(contracts, staker, stakeAmount, days);
 
       await network.provider.send('evm_increaseTime', [DAYS_28]);
 
       await expect(
-        waitTx(contracts.stake.connect(owner).claimAll())
+        waitTx(contracts.stake.connect(staker).claimAll())
       ).to.be.rejectedWith('FINAL_APY_NOT_APPLIED');
     });
   });
@@ -437,19 +439,19 @@ describe('Stake', function () {
       const stakeAmount = 200 * 10 ** 9;
       const days = 21;
 
-      const balanceBefore = await contracts.stakeToken.balanceOf(owner.address);
+      const balanceBefore = await contracts.stakeToken.balanceOf(staker.address);
 
-      await addStaker(contracts, owner, stakeAmount, days);
+      await addStaker(contracts, staker, stakeAmount, days);
 
       await network.provider.send('evm_increaseTime', [DAYS_28]);
 
-      await waitTx(contracts.stake.connect(owner).setApy(owner.address, newApy));
-      await waitTx(contracts.stake.connect(owner).claimAll());
+      await waitTx(contracts.stake.connect(admin).setApy(staker.address, newApy));
+      await waitTx(contracts.stake.connect(staker).claimAll());
 
       const expectedReward = '114529737';
 
       await expect(
-        contracts.stakeToken.balanceOf(owner.address)
+        contracts.stakeToken.balanceOf(staker.address)
       ).to.eventually.equal(balanceBefore.add(expectedReward));
     });
 
@@ -458,19 +460,19 @@ describe('Stake', function () {
       const stakeAmount = 200 * 10 ** 9;
       const days = 28;
 
-      const balanceBefore = await contracts.stakeToken.balanceOf(owner.address);
+      const balanceBefore = await contracts.stakeToken.balanceOf(staker.address);
 
-      await addStaker(contracts, owner, stakeAmount, days);
+      await addStaker(contracts, staker, stakeAmount, days);
 
       await network.provider.send('evm_increaseTime', [DAYS_28]);
 
-      await waitTx(contracts.stake.connect(owner).setApy(owner.address, newApy));
-      await waitTx(contracts.stake.connect(owner).claimAll());
+      await waitTx(contracts.stake.connect(admin).setApy(staker.address, newApy));
+      await waitTx(contracts.stake.connect(staker).claimAll());
 
       const expectedReward = '152720889';
 
       await expect(
-        contracts.stakeToken.balanceOf(owner.address)
+        contracts.stakeToken.balanceOf(staker.address)
       ).to.eventually.equal(balanceBefore.add(expectedReward));
     });
   });
@@ -480,7 +482,7 @@ describe('Stake', function () {
       const stakeAmount = 1;
 
       await expect(
-        waitTx(contracts.stake.connect(owner).addToStake(stakeAmount))
+        waitTx(contracts.stake.connect(staker).addToStake(stakeAmount))
       ).to.be.rejectedWith('STAKED_AMOUNT_IS_ZERO');
     });
 
@@ -489,14 +491,14 @@ describe('Stake', function () {
       const stakeAmount = 200 * 10 ** 9;
       const days = 29;
 
-      await addStaker(contracts, owner, stakeAmount, days);
+      await addStaker(contracts, staker, stakeAmount, days);
 
       await network.provider.send('evm_increaseTime', [DAYS_28]);
 
-      await waitTx(contracts.stake.connect(owner).setApy(owner.address, newApy));
+      await waitTx(contracts.stake.connect(admin).setApy(staker.address, newApy));
 
       await expect(
-        waitTx(contracts.stake.connect(owner).addToStake(stakeAmount))
+        waitTx(contracts.stake.connect(staker).addToStake(stakeAmount))
       ).to.be.rejectedWith('FINAL_CYCLE');
     });
 
@@ -504,10 +506,10 @@ describe('Stake', function () {
       const stakeAmount = 200 * 10 ** 9;
       const days = 365;
 
-      await addStaker(contracts, owner, stakeAmount, days);
+      await addStaker(contracts, staker, stakeAmount, days);
 
       await expect(
-        waitTx(contracts.stake.connect(owner).addToStake(stakeAmount))
+        waitTx(contracts.stake.connect(staker).addToStake(stakeAmount))
       ).to.be.rejectedWith('NOT_ENOUGH_ALLOWANCE');
     });
   });
@@ -518,12 +520,12 @@ describe('Stake', function () {
       const addToStakeAmount = 100 * 10 ** 9;
       const days = 365;
 
-      await addStaker(contracts, owner, stakeAmount, days);
+      await addStaker(contracts, staker, stakeAmount, days);
 
-      await addToStake(contracts, owner, addToStakeAmount);
+      await addToStake(contracts, staker, addToStakeAmount);
 
       await expect(
-        contracts.stake.getPendingAmount(owner.address)
+        contracts.stake.getPendingAmount(staker.address)
       ).to.eventually.equal(addToStakeAmount);
     });
   });

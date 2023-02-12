@@ -16,20 +16,27 @@ const DAYS_28 = DAYS_1 * 28;
 
 let contracts;
 let accounts;
-let owner;
+let admin;
+let staker;
 
 describe('Stake E2E', function () {
 
   beforeEach('Setup', async function () {
     accounts = await ethers.getSigners();
-    [owner] = accounts;
+    [admin, staker] = accounts;
 
-    contracts = await setupContracts(owner.address);
+    contracts = await setupContracts(admin.address);
 
     // fund staking contract
-    await contracts.stakeToken.connect(owner).transfer(
+    await contracts.stakeToken.connect(admin).transfer(
       contracts.stake.address,
       BN(100).times(BN(10).pow(18)).toFixed()
+    );
+
+    // fund staker
+    await contracts.stakeToken.connect(admin).transfer(
+      staker.address,
+      BN(400).times(BN(10).pow(18)).toFixed()
     );
   });
 
@@ -45,27 +52,27 @@ describe('Stake E2E', function () {
       const addToStakeAmount = 100 * 10 ** 9;
       const days = 365;
 
-      const balanceBefore = await contracts.stakeToken.balanceOf(owner.address);
+      const balanceBefore = await contracts.stakeToken.balanceOf(staker.address);
 
-      await addStaker(contracts, owner, stakeAmount, days);
+      await addStaker(contracts, staker, stakeAmount, days);
 
       for (let i = 0; i < 6; i++) {
         await network.provider.send('evm_increaseTime', [DAYS_28]);
 
-        await waitTx(contracts.stake.connect(owner).setApy(owner.address, newApy1));
+        await waitTx(contracts.stake.connect(admin).setApy(staker.address, newApy1));
       }
 
-      await waitTx(contracts.stake.connect(owner).claimRewards());
+      await waitTx(contracts.stake.connect(staker).claimRewards());
 
-      await addToStake(contracts, owner, addToStakeAmount);
+      await addToStake(contracts, staker, addToStakeAmount);
 
       for (let i = 0; i < 8; i++) {
         await network.provider.send('evm_increaseTime', [DAYS_28]);
 
-        await waitTx(contracts.stake.connect(owner).setApy(owner.address, newApy2));
+        await waitTx(contracts.stake.connect(admin).setApy(staker.address, newApy2));
       }
 
-      await waitTx(contracts.stake.connect(owner).claimAll());
+      await waitTx(contracts.stake.connect(staker).claimAll());
 
       // reward from 1-6 months         '13288594193'
       // reward from 7th month            '895989747'
@@ -75,7 +82,7 @@ describe('Stake E2E', function () {
       const expectedReward =            '22413047917';
 
       await expect(
-        contracts.stakeToken.balanceOf(owner.address)
+        contracts.stakeToken.balanceOf(staker.address)
       ).to.eventually.equal(balanceBefore.add(expectedReward));
     });
   });
