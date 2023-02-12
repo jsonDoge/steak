@@ -35,6 +35,8 @@ contract Stake {
     // admin
 
     function setApy(address staker, uint256 newApy) public onlyAdmin {
+        // Safe guard for too big APY
+        require(newApy <= 10000, "APY_TOO_BIG");
         require(stakers[staker].stakedAmount > 0, "STAKER_NOT_FOUND");
         require(
             stakers[staker].currentCycle != _getFinalCycle(stakers[staker].durationDays),

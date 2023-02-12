@@ -138,6 +138,21 @@ describe('Stake', function () {
       ).to.be.rejectedWith('ONLY_ADMIN');
     });
 
+    it('Trying to set APY to more than 100%', async function () {
+      const newApy = 10001; // 100.01%
+      const stakeAmount = 1;
+      const days = 365;
+
+      await addStaker(contracts, owner, stakeAmount, days);
+
+      await network.provider.send('evm_increaseTime', [DAYS_28]);
+
+      await expect(
+        waitTx(contracts.stake.connect(owner).setApy(owner.address, newApy))
+      ).to.be.rejectedWith('APY_TOO_BIG');
+    });
+
+
     it('Trying to set APY before 28 days passed', async function () {
       const newApy = 1;
       const stakeAmount = 1;
