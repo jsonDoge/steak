@@ -89,7 +89,10 @@ contract Stake is ReentrancyGuard {
         );
 
         stakers[msg.sender] = Staker(amount, 0, 0, _now() + (days_ * 1 days), days_, 0, 1);
-        IERC20(stakeToken).transferFrom(msg.sender, address(this), amount);
+        require(
+            IERC20(stakeToken).transferFrom(msg.sender, address(this), amount),
+            "TRANSFER_FAILED"
+        );
     }
 
     function addToStake(uint256 amount) public nonReentrant {
@@ -105,7 +108,10 @@ contract Stake is ReentrancyGuard {
         );
 
         stakers[msg.sender].pendingAmount += amount;
-        IERC20(stakeToken).transferFrom(msg.sender, address(this), amount);
+        require(
+            IERC20(stakeToken).transferFrom(msg.sender, address(this), amount),
+            "TRANSFER_FAILED"
+        );
     }
 
     function getTotalStaked(address staker) public view returns (uint256) {
@@ -123,7 +129,10 @@ contract Stake is ReentrancyGuard {
     function claimRewards() public nonReentrant {
         require(stakers[msg.sender].claimableAmount > 0, "CLAIMABLE_AMOUNT_IS_ZERO");
 
-        IERC20(stakeToken).transfer(msg.sender, stakers[msg.sender].claimableAmount);
+        require(
+            IERC20(stakeToken).transfer(msg.sender, stakers[msg.sender].claimableAmount),
+            "TRANSFER_FAILED"
+        );
         stakers[msg.sender].claimableAmount = 0;
     }
 
@@ -135,9 +144,12 @@ contract Stake is ReentrancyGuard {
             "FINAL_APY_NOT_APPLIED"
         );
 
-        IERC20(stakeToken).transfer(
-            msg.sender,
-            stakers[msg.sender].claimableAmount + stakers[msg.sender].stakedAmount
+        require(
+            IERC20(stakeToken).transfer(
+                msg.sender,
+                stakers[msg.sender].claimableAmount + stakers[msg.sender].stakedAmount
+            ),
+            "TRANSFER_FAILED"
         );
 
         delete stakers[msg.sender];
