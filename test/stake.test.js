@@ -50,6 +50,19 @@ describe('Stake', function () {
       ).to.be.rejectedWith('NOT_ENOUGH_ALLOWANCE');
     });
 
+    it('Try to stake without enough balance', async function () {
+      const stakeAmount = 1;
+      const days = 21;
+
+      await waitTx(
+        contracts.stakeToken.connect(accounts[2]).approve(contracts.stake.address, stakeAmount)
+      );
+
+      await expect(
+        waitTx(contracts.stake.connect(accounts[2]).stake(stakeAmount, days))
+      ).to.be.rejectedWith('ERC20: transfer amount exceeds balance');
+    });
+
     it('Try to stake 0 amount', async function () {
       const stakeAmount = 0;
       const days = 21;
@@ -133,7 +146,6 @@ describe('Stake', function () {
       const stakeAmount = 1;
       const days = 365;
 
-      // fund another staker
       await contracts.stakeToken.connect(admin).transfer(
         accounts[2].address,
         BN(1).times(BN(10).pow(18)).toFixed()
