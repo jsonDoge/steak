@@ -399,18 +399,46 @@ describe('Stake', function () {
     });
   });
 
-  describe('Calculates interest rate from APY correctly', async function () {
-    // This is manually tested by setting getInterestRateFromApy to a public function
-    it.skip('Getting interest rate of apy', async function () {
+  // This is manually tested by setting getInterestRateFromApy to a public function
+  describe.skip('Calculates interest rate from APY correctly [private]', async function () {
+    it('Getting interest rate of 15% apy', async function () {
       const apy = 1500; // 15%
 
       const interestRate = await contracts.stake.getInterestRateFromApy(apy);
 
-      const expectedInterestRate = '0.00038298275';
+      const expectedInterestRate = '0.0003829827503389';
+
+      // prb-math last 2 decimal values are not accurate
       const resultInterestRate = BN(interestRate.toString())
-        .div(BN(10).pow(18)).toString().slice(0, 13);
+        .div(BN(10).pow(18)).toString().slice(0, 18);
 
       expect(resultInterestRate).to.equal(expectedInterestRate);
+    });
+
+    it('Getting interest rate of 0% apy', async function () {
+      const apy = 0;
+
+      const interestRate = await contracts.stake.getInterestRateFromApy(apy);
+
+      const expectedInterestRate = '0';
+      const resultInterestRate = BN(interestRate.toString())
+        .div(BN(10).pow(18)).toString();
+
+      expect(resultInterestRate).to.equal(expectedInterestRate);
+    });
+  });
+
+  // This is manually tested by setting getRewards to a public function
+  describe.skip('Calculates rewards correctly [private]', async function () {
+    it('Getting rewards of a staked amount', async function () {
+      const apy = 1500; // 15%
+      const stakeAmount = 200 * 10 ** 9;
+      const days = 28;
+
+      const rewards = await contracts.stake.getRewards(stakeAmount, apy, days);
+      const expectedRewards = '2155828985';
+
+      expect(rewards).to.equal(expectedRewards);
     });
   });
 
