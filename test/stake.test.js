@@ -85,6 +85,15 @@ describe('Stake', function () {
       ).to.be.rejectedWith('STAKING_DAYS_OUT_OF_BOUNDS');
     });
 
+    it('Try to stake above max amount', async function () {
+      const stakeAmount = BN(1e58);
+      const days = 365;
+
+      await expect(
+        waitTx(contracts.stake.connect(staker).stake(stakeAmount.toFixed(), days))
+      ).to.be.rejectedWith('AMOUNT_MAX_LIMIT');
+    });
+
     it('Try to stake again while already staking', async function () {
       const stakeAmount = 1;
       const days = 21;
@@ -511,6 +520,18 @@ describe('Stake', function () {
       await expect(
         waitTx(contracts.stake.connect(staker).addToStake(stakeAmount))
       ).to.be.rejectedWith('NOT_ENOUGH_ALLOWANCE');
+    });
+
+    it('Trying to add to stake above max amount', async function () {
+      const stakeAmount = 1;
+      const addToStakeAmount = BN(1e58).minus(1);
+      const days = 365;
+
+      await addStaker(contracts, staker, stakeAmount, days);
+
+      await expect(
+        waitTx(contracts.stake.connect(staker).addToStake(addToStakeAmount.toFixed()))
+      ).to.be.rejectedWith('AMOUNT_MAX_LIMIT');
     });
   });
 
