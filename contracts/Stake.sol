@@ -43,7 +43,7 @@ contract Stake {
         require(
             _now() -
                 _getStakeStartdate(stakers[staker].lockedUntil, stakers[staker].durationDays) >=
-                stakers[staker].currentCycle * 28 days,
+                uint256(stakers[staker].currentCycle) * 28 days,
             "CYCLE_HAS_NOT_ENDED"
         );
 
@@ -65,9 +65,9 @@ contract Stake {
             cycleDays
         );
 
-        if (stakers[msg.sender].pendingAmount > 0) {
-            stakers[staker].stakedAmount += stakers[msg.sender].pendingAmount;
-            stakers[msg.sender].pendingAmount = 0;
+        if (stakers[staker].pendingAmount > 0) {
+            stakers[staker].stakedAmount += stakers[staker].pendingAmount;
+            stakers[staker].pendingAmount = 0;
         }
     }
 
