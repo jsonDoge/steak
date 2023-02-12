@@ -5,7 +5,8 @@
   "author": "jsonDoge",
   "license": "MIT",
   "scripts": {
-    "test": "hardhat test ./test/*.test.js --network hardhat"
+    "test": "hardhat test ./test/*.test.js --network hardhat",
+    "test:e2e": "hardhat test ./test/e2e.test.js --network hardhat"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.8.1",
