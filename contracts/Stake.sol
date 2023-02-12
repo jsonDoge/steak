@@ -42,7 +42,7 @@ contract Stake {
         );
         require(
             _now() -
-                _getStakeStartdate(stakers[staker].lockedUntil, stakers[staker].durationDays) >=
+                _getStakeStartDate(stakers[staker].lockedUntil, stakers[staker].durationDays) >=
                 uint256(stakers[staker].currentCycle) * 28 days,
             "CYCLE_HAS_NOT_ENDED"
         );
@@ -143,7 +143,7 @@ contract Stake {
     // apy_: apy * 10 ** 2 (multiplied by 10**2 for decimal points)
     // formula: ((1 + apy / 100) ^ (1 / 365)) - 1
 
-    function getInterestRateFromApy(uint256 apy_) public pure returns (PRB.UD60x18) {
+    function getInterestRateFromApy(uint256 apy_) private pure returns (PRB.UD60x18) {
         return
             PRB.sub(
                 PRB.pow(
@@ -163,7 +163,7 @@ contract Stake {
     // days: staking duration in days
 
     // formula: s * ((1 + rate) ^ days) - s
-    function getRewards(uint256 s, uint256 apy_, uint256 days_) public pure returns (uint256) {
+    function getRewards(uint256 s, uint256 apy_, uint256 days_) private pure returns (uint256) {
         return
             PRB.convert(
                 PRB.sub(
@@ -185,7 +185,7 @@ contract Stake {
         return block.timestamp;
     }
 
-    function _getStakeStartdate(
+    function _getStakeStartDate(
         uint256 lockedUntil,
         uint256 durationDays
     ) private pure returns (uint256) {

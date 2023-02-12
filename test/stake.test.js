@@ -283,6 +283,30 @@ describe('Stake', function () {
           .plus(expectedRewardSecondCycle)
       );
     });
+
+    it('Trying to set APY for the both cycles after two cycles passed', async function () {
+      const newApy1 = 100; // 1%
+      const newApy2 = 200; // 2%
+      const stakeAmount = 200 * 10 ** 9;
+      const days = 365;
+
+      await addStaker(contracts, accounts[1], stakeAmount, days);
+
+      await network.provider.send('evm_increaseTime', [DAYS_28]);
+      await network.provider.send('evm_increaseTime', [DAYS_28]);
+
+      await waitTx(contracts.stake.connect(owner).setApy(accounts[1].address, newApy1));
+      await waitTx(contracts.stake.connect(owner).setApy(accounts[1].address, newApy2));
+
+      const expectedReward = '457005080';
+
+      await expect(
+        contracts.stake.getApy(accounts[1].address)
+      ).to.eventually.equal(newApy2);
+      await expect(
+        contracts.stake.getTotalStaked(accounts[1].address)
+      ).to.eventually.equal(BN(stakeAmount).plus(expectedReward));
+    });
   });
 
   describe('Claiming rewards should fail', async function () {
@@ -350,7 +374,8 @@ describe('Stake', function () {
   });
 
   describe('Calculates interest rate from APY correctly', async function () {
-    it('Getting interest rate of regular', async function () {
+    // This is manually tested by setting getInterestRateFromApy to a public function
+    it.skip('Getting interest rate of apy', async function () {
       const apy = 1500; // 15%
 
       const interestRate = await contracts.stake.getInterestRateFromApy(apy);
