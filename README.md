@@ -87,3 +87,5 @@ To run only E2E tests:
 - @prb/math package used for math performs rounding down in all their math operations. This can cause results with exact values like 100000000... become 99999.... The values lost are very isignificant, but are visually unpleasant. This guaranties that the use does not receive more than he should. Otherwise we could try applying rounding up manually, but this would of course require more gas.
 
 - setApy function can be called at any time after the each cycle. Even if multiplecycle duration passed (example 56 days) the admin can immediately set both APYs for the first and second cycles. WARNING: this does mean that the staker will not be able to claim rewards until the setApy will be called.
+
+- Staking Contract has to be manually supplied funds for staking rewards. Currently there is no function to withdraw them.
