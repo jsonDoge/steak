@@ -80,6 +80,7 @@ contract Stake is ReentrancyGuard {
         require(stakers[msg.sender].stakedAmount == 0, "ALREADY_STAKING");
         require(days_ >= 21 && days_ <= 365, "STAKING_DAYS_OUT_OF_BOUNDS");
         require(amount > 0, "CANT_STAKE_ZERO_AMOUNT");
+        require(amount < 1e58, "AMOUNT_MAX_LIMIT");
         require(
             IERC20(stakeToken).allowance(msg.sender, address(this)) >= amount,
             "NOT_ENOUGH_ALLOWANCE"
@@ -91,6 +92,7 @@ contract Stake is ReentrancyGuard {
 
     function addToStake(uint256 amount) public nonReentrant {
         require(stakers[msg.sender].stakedAmount > 0, "STAKED_AMOUNT_IS_ZERO");
+        require(stakers[msg.sender].stakedAmount + amount < 1e58, "AMOUNT_MAX_LIMIT");
         require(
             stakers[msg.sender].currentCycle < _getFinalCycle(stakers[msg.sender].durationDays) - 1,
             "FINAL_CYCLE"
