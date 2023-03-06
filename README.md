@@ -93,7 +93,7 @@ To run only E2E tests:
 
 ## TODO
 
-This section is dedicated to what I would work to improve further, but due to time limits and this being an interview, the code is enough to show my current skills.
+This section is dedicated to what I would work to improve further.
 
 - Investigate @prb/math further to see how to avoid minor discrepancies or look for a more accurate alternative.
 
